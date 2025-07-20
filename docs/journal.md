@@ -1,21 +1,17 @@
-# Developer Journal
+# Project Journal
 
-This journal is a log of the development process for the Smart Home Automation API. It's a place to record decisions, document issues, and keep track of progress.
+This journal tracks key decisions, challenges, and solutions during the development of the Smart Home Automation API.
 
-## Day 1: Project Setup
+## 2025-07-20
 
-- **Goal:** Set up the initial project structure, install dependencies, and get a basic server running.
-- **Steps:**
-  1. Initialized a new Node.js project.
-  2. Installed Express, TypeScript, and other dependencies.
-  3. Set up a basic Express server.
-  4. Configured TypeScript and set up a `tsconfig.json` file.
-  5. Created a `Dockerfile` and `docker-compose.yml` for containerization.
-- **Issues:**
-  - Encountered a CORS error when trying to access the API from a different origin.
-  - **Fix:** Installed the `cors` package and added `app.use(cors())` to the Express middleware.
-  - The logger was imported but not used, so it appeared "dark" in the IDE.
-  - **Fix:** Replaced `console.error` with `logger.error` in the error handler and added a middleware to log incoming requests.
-- **Decisions:**
-  - Chose to use `pino` for logging because it's lightweight and fast.
-  - Decided to use Docker for containerization to ensure a consistent development and production environment.
+- **Issue:** MongoDB transactions failing with "Transaction numbers are only allowed on a replica set member or mongos" error.
+  - **Cause:** Local MongoDB instance was running as a standalone server, not a replica set.
+  - **Resolution:** Modified `docker-compose.yml` to configure MongoDB as a replica set and added `init-mongo.sh` script to initiate the replica set. Updated `MONGODB_URI` in `.env` to `mongodb://mongodb:27017/smarthome` for Dockerized app, and then back to `mongodb://localhost:27017/smarthome` for local `npm run dev` (with Docker containers running in background).
+
+- **Issue:** `npm test` failing with timeout errors for User model tests.
+  - **Cause:** Tests were attempting to connect to a non-existent MongoDB instance.
+  - **Resolution:** Installed `mongodb-memory-server` and updated `src/models/User.test.ts` to use an in-memory database for isolated unit testing.
+
+- **Issue:** Type mismatch in `IUser` interface for `households` array.
+  - **Cause:** `households` was defined as `Types.ObjectId[] | IHousehold[]`, leading to ambiguity.
+  - **Resolution:** Changed `households` type to `Types.ObjectId[]` in `src/types/user.d.ts`. Populating the field with Mongoose will correctly provide `IHousehold` documents when needed.
