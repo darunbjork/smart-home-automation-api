@@ -1,5 +1,6 @@
 // smart-home-automation-api/src/models/User.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, model } from 'mongoose';
+
 import bcrypt from 'bcryptjs'; // For password hashing
 import { IUser } from '../types/user.d'; // Import our interface
 
@@ -54,8 +55,8 @@ UserSchema.pre('save', async function (next) {
     const salt = await bcrypt.genSalt(10); // Generate a salt with 10 rounds
     this.password = await bcrypt.hash(this.password!, salt); // Hash the password
     next();
-  } catch (error: any) {
-    next(error); // Pass any error to the next middleware
+  } catch (error) {
+    next(error as Error); // Pass any error to the next middleware
   }
 });
 

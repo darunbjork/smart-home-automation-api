@@ -1,5 +1,5 @@
 // smart-home-automation-api/src/models/Household.ts
-import { Schema, model, Types } from 'mongoose';
+import { Schema, model } from 'mongoose';
 import { IHousehold } from '../types/user.d'; // Import our interface
 
 const HouseholdSchema = new Schema<IHousehold>({

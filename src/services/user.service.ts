@@ -55,11 +55,14 @@ export const registerUser = async (username: string, email: string, password: st
       session.endSession(); // Always end the session
     }
 
-  } catch (error: any) {
-    if (error.code === 11000) { // MongoDB duplicate key error code
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 11000) { // MongoDB duplicate key error code
       throw new CustomError('Username or email already exists.', 409);
     }
-    throw new CustomError(`Registration failed: ${error.message}`, error.statusCode || 500);
+    if (error instanceof CustomError) {
+      throw new CustomError(`Registration failed: ${error.message}`, error.statusCode || 500);
+    }
+    throw new CustomError(`Registration failed: ${error}`);
   }
 };
 
@@ -79,7 +82,10 @@ export const loginUser = async (email: string, password: string) => {
 
     logger.info(`User ${user.username} logged in successfully.`);
     return user; // Will contain populated households, but not hashed password when returned from service
-  } catch (error: any) {
-    throw new CustomError(`Login failed: ${error.message}`, error.statusCode || 500);
+  } catch (error) {
+    if (error instanceof CustomError) {
+      throw new CustomError(`Login failed: ${error.message}`, error.statusCode || 500);
+    }
+    throw new CustomError(`Login failed: ${error}`);
   }
 };
