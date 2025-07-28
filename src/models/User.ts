@@ -1,5 +1,6 @@
 // smart-home-automation-api/src/models/User.ts
 import { Schema, model } from 'mongoose';
+
 import bcrypt from 'bcryptjs'; // For password hashing
 import { IUser } from '../types/user.d'; // Import our interface
 
