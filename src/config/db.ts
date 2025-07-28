@@ -5,11 +5,11 @@ import logger from '../utils/logger'; // Our custom logger
 
 const connectDB = async () => {
   try {
-    const mongoURI = env.MONGODB_URI;
+    const mongoURI = env.mongoURI;
 
     if (!mongoURI) {
       // Senior insight: Fail fast if critical configuration is missing.
-      throw new Error('MONGODB_URI is not defined in environment variables.');
+      throw new Error('mongoURI is not defined in environment variables.');
     }
 
     // Connect to MongoDB using Mongoose

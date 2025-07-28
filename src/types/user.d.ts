@@ -17,11 +17,11 @@ export interface IUser extends Document {
   username: string;
   email: string;
   password?: string; // Optional because it won't be retrieved with user data generally
-  households: Types.ObjectId[] | IHousehold[]; // Array of references to Household documents
+  households: Types.ObjectId[]; // Array of references to Household documents
   role: 'owner' | 'member'; // Basic role management
+  isActive: boolean; // For soft deletion
   createdAt: Date;
   updatedAt: Date;
 
-  // Method to compare passwords (added in model definition later)
   comparePassword(candidatePassword: string): Promise<boolean>;
 }

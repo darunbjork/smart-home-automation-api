@@ -1,6 +1,3 @@
-# smart-home-automation-api/docker-compose.yml
-version: "3.8"
-
 services:
   api:
     build:
@@ -10,26 +7,22 @@ services:
       - "3000:3000"
     volumes:
       - .:/app
-      - /app/node_modules
     environment:
       - PORT=${PORT}
       - NODE_ENV=${NODE_ENV}
-      - MONGODB_URI=mongodb://mongodb:27017/smarthome # Add MongoDB URI
+      - mongoURI=mongodb://mongodb:27017/smarthome # Add MongoDB URI
     env_file:
-      - ./.env
+      - ./.env.production
+    depends_on:
+      - mongodb
 
-  mongodb: # New service for MongoDB
-    image: mongo:6.0 # Use a specific version for stability
+  mongodb:
+    image: mongo:6.0
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     ports:
-      - "27017:27017" # Expose MongoDB port to host (for direct access/tools)
+      - "27017:27017"
     volumes:
-      - mongodb_data:/data/db # Persist MongoDB data
-    environment:
-      # Optional: Define admin user for MongoDB if needed, for simplicity we skip it now
-      # - MONGO_INITDB_ROOT_USERNAME=admin
-      # - MONGO_INITDB_ROOT_PASSWORD=password
-      - MONGO_URI=mongodb://mongodb:27017/smarthome # Internal MongoDB URI for the container
+      - mongodb_data:/data/db
 
   mongo-init-replica:
     image: mongo
@@ -38,8 +31,9 @@ services:
     volumes:
       - ./init-mongo.sh:/usr/local/bin/init-mongo.sh
     command: "bash /usr/local/bin/init-mongo.sh"
+    restart: on-failure
 
-volumes: # Define named volume for data persistence
+volumes:
   mongodb_data:
 
 networks:

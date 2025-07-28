@@ -37,6 +37,10 @@ const UserSchema = new Schema<IUser>({
     enum: ['owner', 'member'], // Enforces specific values
     default: 'member', // Default role for new users
     required: true,
+  },
+  isActive: {
+    type: Boolean,
+    default: true, // New users are active by default
   }
 }, {
   timestamps: true, // Automatically add createdAt and updatedAt fields
@@ -59,17 +63,9 @@ UserSchema.pre('save', async function (next) {
   }
 });
 
-// --- Instance Method to Compare Passwords ---
-// Senior insight: Add methods directly to the Mongoose schema for actions
-// related to a specific document instance, like password comparison.
 UserSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
-  // `this.password` is the hashed password stored in the database
-  // `candidatePassword` is the plain text password provided by the user
   return bcrypt.compare(candidatePassword, this.password!);
 };
-
-// Senior insight: Add indexes for frequently queried fields to improve performance.
-
 
 const User = model<IUser>('User', UserSchema);
 

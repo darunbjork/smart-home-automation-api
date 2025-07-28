@@ -27,10 +27,125 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- Routes ---
 app.use('/', healthRoutes);
-app.use('/auth', userRoutes); // Use user routes under the /auth prefix
+app.use('/users', userRoutes);
+
+// Define Swagger/OpenAPI schemas for common responses/models for documentation.
+// This is a setup for our Swagger documentation, will be expanded later.
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     UserResponse:
+ *       type: object
+ *       properties:
+ *         _id:
+ *           type: string
+ *           description: The user ID.
+ *           example: 60f8b8e0c8d7c1a0c8d7c1a0
+ *         username:
+ *           type: string
+ *           description: The user's chosen username.
+ *           example: john_doe
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: The user's email address.
+ *           example: john.doe@example.com
+ *         households:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               _id:
+ *                 type: string
+ *                 example: 60f8b8e0c8d7c1a0c8d7c1a1
+ *               name:
+ *                 type: string
+ *                 example: "Doe Family Home"
+ *         role:
+ *           type: string
+ *           description: The user's role (owner or member).
+ *           example: owner
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: The date the user was created.
+ *           example: 2025-07-21T10:00:00Z
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: The date the user was last updated.
+ *           example: 2025-07-21T10:00:00Z
+ *   responses:
+ *     BadRequest:
+ *       description: Invalid input data.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               error:
+ *                 type: object
+ *                 properties:
+ *                   message:
+ *                     type: string
+ *                     example: "Validation failed: Username must be between 3 and 30 characters"
+ *     Unauthorized:
+ *       description: Authentication failed.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               error:
+ *                 type: object
+ *                 properties:
+ *                   message:
+ *                     type: string
+ *                     example: "Invalid credentials."
+ *     NotFound:
+ *       description: Resource not found.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               error:
+ *                 type: object
+ *                 properties:
+ *                   message:
+ *                     type: string
+ *                     example: "User not found."
+ *     Conflict:
+ *       description: Resource conflict (e.g., duplicate unique key).
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               error:
+ *                 type: object
+ *                 properties:
+ *                   message:
+ *                     type: string
+ *                     example: "Username or email already exists."
+ *     InternalServerError:
+ *       description: Unexpected internal server error.
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               error:
+ *                 type: object
+ *                 properties:
+ *                   message:
+ *                     type: string
+ *                     example: "An unexpected error occurred."
+ */
 
 // --- Global Error Handling Middleware (Pillar 3: Error Handling & Observability) ---
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction /* eslint-disable-line @typescript-eslint/no-unused-vars */) => {
   logger.error('Unhandled API Error:', err);
 
   // Determine status code: use custom error's statusCode or default to 500
@@ -39,10 +154,8 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   const message = env.NODE_ENV === 'production' ? 'An unexpected error occurred.' : err.message;
 
   res.status(statusCode).json({
-    error: {
-      message: message,
-      ...(env.NODE_ENV === 'development' && { stack: err.stack }),
-    },
+    message: message,
+    ...(env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 });
 
