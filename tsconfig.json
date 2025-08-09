@@ -1,0 +1,25 @@
+// smart-home-automation-api/tsconfig.json
+{
+  "compilerOptions": {
+    "target": "es2022",                             /* Specify ECMAScript target version: "ES3" (default), "ES5", "ES2015", "ES2016", "ES2017", "ES2018", "ES2019", "ES2020", "ES2021", "ES2022", "ESNext". */
+    "module": "commonjs",                           /* Specify module code generation: "none", "commonjs", "amd", "system", "umd", "es2015", "es2020", "es2022", "ESNext", "node16", "nodenext". */
+    "lib": ["es2022"],                              /* Specify library files to be included in the compilation. */
+    "outDir": "./dist",                             /* Redirect output structure to the directory. */
+    "rootDir": "./src",                             /* Specify the root directory of input files. Use to control the output directory structure with --outDir. */
+    "strict": true,                                 /* Enable all strict type-checking options. */
+    "esModuleInterop": true,                        /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables `allowSyntheticDefaultImports` for type compatibility. */
+    "skipLibCheck": true,                           /* Skip type checking all .d.ts files. */
+    "forceConsistentCasingInFileNames": true,       /* Ensure that casing is correct in imports. */
+    "resolveJsonModule": true,                      /* Allow importing .json files. */
+    "sourceMap": true,                              /* Generate .map files for debugging. */
+    "inlineSources": true                           /* Emit the source alongside the sourcemap within a single file; requires --sourceMap to be set. */
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

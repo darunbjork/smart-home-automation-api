@@ -1,0 +1,31 @@
+# smart-home-automation-api/docker-compose.yml
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      # Use the 'development' stage for local development to include nodemon and dev dependencies
+      # For production, you'd change this to target: base or remove target to use the default CMD
+      target: development
+    ports:
+      - "3000:3000" # Host_Port:Container_Port
+    volumes:
+      # Mount the current directory into the container to enable live reloading during development.
+      # This means changes in your local code are immediately reflected in the container.
+      - .:/app
+      # Exclude node_modules from the volume mount to avoid conflicts and leverage container's node_modules
+      - /app/node_modules
+    environment:
+      # Pass environment variables defined in .env to the container
+      # This is how our .env file values get into the container's process.env
+      - PORT=${PORT}
+      - NODE_ENV=${NODE_ENV}
+    env_file:
+      - ./.env # Load environment variables from the .env file
+
+networks:
+  default:
+    # Allows other services (like MongoDB, Redis later) to communicate with this API service.
+    # In a real enterprise setup, you might define explicit bridge networks for different tiers.
+    driver: bridge
