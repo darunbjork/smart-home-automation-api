@@ -1,58 +1,60 @@
 // smart-home-automation-api/src/server.ts
 import app from "./app";
 import { env } from "./config/env";
-// We will replace console.log with a proper logger (Winston) later
-import logger from "./utils/logger"; // Our custom logger, will be implemented soon
+import connectDB from "./config/db"; // Import our database connection function
+import logger from "./utils/logger";
+import mongoose from "mongoose";
 
 const PORT = env.PORT;
 
-const server = app.listen(PORT, () => {
-  // A senior engineer considers clear start-up messages for operational clarity.
-  // Also, graceful shutdown handling is critical (we'll add that next).
-  logger.info(`Server running on port ${PORT} in ${env.NODE_ENV} environment.`);
-  logger.info(`Access health check at http://localhost:${PORT}/health`);
-});
+const startServer = async () => {
+  // Connect to the database before starting the server.
+  // Senior insight: Ensure all critical dependencies (like DB) are ready before serving requests.
+  await connectDB();
 
-// --- Graceful Shutdown Handling (Pillar 8: Configuration & Deployment) ---
-// This ensures that our server shuts down cleanly, allowing ongoing requests to complete
-// and preventing data loss or abrupt disconnections, especially in containerized environments.
-const gracefulShutdown = () => {
-  logger.info("Received shutdown signal. Closing server...");
-  server.close(async (err) => {
-    if (err) {
-      logger.error("Error during server shutdown:", err);
-      process.exit(1); // Exit with failure code
-    }
-    // In later steps, we would close database connections (MongoDB, Redis),
-    // stop background job consumers (BullMQ), etc. here.
-    logger.info("Server closed. Exiting process.");
-    process.exit(0); // Exit with success code
+  const server = app.listen(PORT, () => {
+    logger.info(
+      `Server running on port ${PORT} in ${env.NODE_ENV} environment.`,
+    );
+    logger.info(`Access health check at http://localhost:${PORT}/health`);
   });
 
-  // Force close server after 10 seconds if it's still running
-  // This is a failsafe to prevent indefinite hang-ups.
-  setTimeout(() => {
-    logger.error("Forcefully shutting down server due to timeout.");
-    process.exit(1);
-  }, 10000); // 10 seconds timeout
+  // --- Graceful Shutdown Handling (Pillar 8: Configuration & Deployment) ---
+  const gracefulShutdown = async () => {
+    // Made async to await DB close
+    logger.info("Received shutdown signal. Closing server...");
+    server.close(async (err) => {
+      if (err) {
+        logger.error("Error during server shutdown:", err);
+        process.exit(1);
+      }
+      // Senior insight: Explicitly close database connections during shutdown.
+      try {
+        await mongoose.connection.close(); // Close Mongoose connection
+        logger.info("MongoDB connection closed.");
+      } catch (dbCloseError) {
+        logger.error("Error closing MongoDB connection:", dbCloseError);
+      }
+      logger.info("Server closed. Exiting process.");
+      process.exit(0);
+    });
+
+    setTimeout(() => {
+      logger.error("Forcefully shutting down server due to timeout.");
+      process.exit(1);
+    }, 10000);
+  };
+
+  process.on("SIGTERM", gracefulShutdown);
+  process.on("SIGINT", gracefulShutdown);
+  process.on("unhandledRejection", (reason, promise) => {
+    logger.error("Unhandled Rejection at:", promise, "reason:", reason);
+    gracefulShutdown();
+  });
+  process.on("uncaughtException", (err) => {
+    logger.error("Uncaught Exception:", err);
+    gracefulShutdown();
+  });
 };
 
-// Listen for termination signals (e.g., from Docker, Kubernetes, or 'kill' command)
-process.on("SIGTERM", gracefulShutdown);
-process.on("SIGINT", gracefulShutdown); // Ctrl+C in development
-process.on("unhandledRejection", (reason, promise) => {
-  // A senior engineer logs and handles unhandled promise rejections
-  // to prevent process crashes in production.
-  logger.error("Unhandled Rejection at:", promise, "reason:", reason);
-  // It's often debated whether to exit on unhandled rejections.
-  // For critical backend services, crashing and restarting is often preferred
-  // to prevent the process from entering an unknown state.
-  gracefulShutdown();
-});
-
-process.on("uncaughtException", (err) => {
-  // A senior engineer catches and logs uncaught exceptions to avoid
-  // application crashes due to synchronous errors.
-  logger.error("Uncaught Exception:", err);
-  gracefulShutdown();
-});
+startServer(); // Call the async function to start the server

@@ -21,11 +21,25 @@ services:
       # This is how our .env file values get into the container's process.env
       - PORT=${PORT}
       - NODE_ENV=${NODE_ENV}
+      - MONGODB_URI=mongodb://mongodb:27017/smarthome # Add MongoDB URI
     env_file:
       - ./.env # Load environment variables from the .env file
 
+  mongodb: # New service for MongoDB
+    image: mongo:6.0 # Use a specific version for stability
+    ports:
+      - "27017:27017" # Expose MongoDB port to host (for direct access/tools)
+    volumes:
+      - mongodb_data:/data/db # Persist MongoDB data
+    environment:
+      # Optional: Define admin user for MongoDB if needed, for simplicity we skip it now
+      # - MONGO_INITDB_ROOT_USERNAME=admin
+      # - MONGO_INITDB_ROOT_PASSWORD=password
+      - MONGO_URI=mongodb://mongodb:27017/smarthome # Internal MongoDB URI for the container
+
+volumes: # Define named volume for data persistence
+  mongodb_data:
+
 networks:
   default:
-    # Allows other services (like MongoDB, Redis later) to communicate with this API service.
-    # In a real enterprise setup, you might define explicit bridge networks for different tiers.
     driver: bridge

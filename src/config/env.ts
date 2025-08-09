@@ -10,9 +10,9 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 interface EnvConfig {
   PORT: number;
   NODE_ENV: string;
-  // Add other environment variables as they are introduced
-  // Example: MONGODB_URI: string;
-  // JWT_SECRET: string;
+  MONGODB_URI: string; // Added MONGODB_URI
+  JWT_SECRET?: string; // Will add later
+  JWT_REFRESH_SECRET?: string; // Will add later
 }
 
 // Ensure all required environment variables are set
@@ -27,14 +27,16 @@ function getEnv(name: string): string {
 }
 
 export const env: EnvConfig = {
-  PORT: parseInt(getEnv("PORT") || "3000", 10), // Default to 3000 if not set, but getEnv will throw
-  NODE_ENV: getEnv("NODE_ENV") || "development", // Default to development
+  PORT: parseInt(getEnv("PORT") || "3000", 10),
+  NODE_ENV: getEnv("NODE_ENV") || "development",
+  MONGODB_URI: getEnv("MONGODB_URI"), // Now required
 };
 
-// Log loaded environment variables (only in development, for security)
 if (env.NODE_ENV === "development") {
   console.log("Loaded Environment Variables:");
   console.log(`  PORT: ${env.PORT}`);
   console.log(`  NODE_ENV: ${env.NODE_ENV}`);
-  // Be careful not to log sensitive variables in production
+  console.log(
+    `  MONGODB_URI: ${env.MONGODB_URI.replace(/:(\/\/)?([^@:]+:[^@:]*)?@/, ":$1<redacted>@")}`,
+  ); // Redact sensitive parts for logs
 }
