@@ -3,12 +3,10 @@ import helmet from "helmet"; // Security headers
 import cors from "cors"; // Cross-Origin Resource Sharing
 import rateLimit from "express-rate-limit"; // Rate limiting
 import healthRoutes from "./routes/health.routes";
-import { env } from "./config/env"; // Our environment configuration
-import logger from "./utils/logger"; // We'll create this later for structured logging
-
-interface HttpError extends Error {
-  statusCode?: number;
-}
+import userRoutes from "./routes/user.routes"; // Import user routes
+import { env } from "./config/env";
+import logger from "./utils/logger";
+import { CustomError } from "./middleware/error.middleware"; // Import CustomError
 
 const app: Application = express();
 
@@ -47,28 +45,27 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- Routes ---
 // Health check route - crucial for load balancers and container orchestration.
-app.use("/", healthRoutes); // Use '/' as prefix for health, so it's accessible at /health
+app.use("/", healthRoutes);
+app.use("/auth", userRoutes); // Use user routes under the /auth prefix
 
 // --- Global Error Handling Middleware (Pillar 3: Error Handling & Observability) ---
 // This is our catch-all for unhandled errors.
 // A senior engineer ensures that errors are gracefully handled and not leaked to clients.
-app.use((err: HttpError, req: Request, res: Response, _next: NextFunction) => {
-  // In a real application, you'd use a robust logger like Winston here
-  // and send error details to an error tracking service like Sentry (which we'll set up later).
-  // For now, we'll log to console.
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error("Unhandled API Error:", err);
 
-  const statusCode = err.statusCode || 500; // Custom errors might have a statusCode
+  // Determine status code: use custom error's statusCode or default to 500
+  const statusCode = err instanceof CustomError ? err.statusCode : 500;
+  // Determine message: hide internal message in production
   const message =
     env.NODE_ENV === "production"
       ? "An unexpected error occurred."
       : err.message;
 
-  // Never send stack traces in production! This is a major security risk.
   res.status(statusCode).json({
     error: {
       message: message,
-      ...(env.NODE_ENV === "development" && { stack: err.stack }), // Only expose stack in dev
+      ...(env.NODE_ENV === "development" && { stack: err.stack }),
     },
   });
 });

@@ -4,6 +4,7 @@ This repository contains the backend API for the Smart Home Automation System. I
 
 ## Table of Contents
 
+- [Progress Log](#progress-log)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
@@ -16,6 +17,10 @@ This repository contains the backend API for the Smart Home Automation System. I
 - [Architecture](#architecture)
 - [Deployment](#deployment)
 - [Contributing](#contributing)
+
+## Progress Log
+
+- [**Day 2: Data Layer Excellence**](docs/day-2.md): Integrated MongoDB and Mongoose, defined User and Household models, and implemented secure authentication with bcrypt.
 
 ## Getting Started
 
