@@ -5,7 +5,7 @@ import logger from "../utils/logger"; // Our custom logger
 
 const connectDB = async () => {
   try {
-    const mongoURI = env.MONGODB_URI;
+    const mongoURI = env.MONGO_URI;
 
     if (!mongoURI) {
       // Senior insight: Fail fast if critical configuration is missing.

@@ -1,32 +1,28 @@
 # smart-home-automation-api/docker-compose.yml
-version: '3.8'
+version: "3.8"
 
 services:
   api:
     build:
       context: .
-      # Use the 'development' stage for local development to include nodemon and dev dependencies
-      # For production, you'd change this to target: base or remove target to use the default CMD
       target: development
     ports:
-      - "3000:3000" # Host_Port:Container_Port
+      - "4000:4000"
     volumes:
-      # Mount the current directory into the container to enable live reloading during development.
-      # This means changes in your local code are immediately reflected in the container.
       - .:/app
-      # Exclude node_modules from the volume mount to avoid conflicts and leverage container's node_modules
       - /app/node_modules
+    depends_on:
+      - mongo-init-replica
     environment:
-      # Pass environment variables defined in .env to the container
-      # This is how our .env file values get into the container's process.env
       - PORT=${PORT}
       - NODE_ENV=${NODE_ENV}
-      - MONGODB_URI=mongodb://mongodb:27017/smarthome # Add MongoDB URI
+      - MONGO_URI=mongodb://mongodb:27017/smarthome?replicaSet=rs0 # Add MongoDB URI
     env_file:
-      - ./.env # Load environment variables from the .env file
+      - ./.env
 
   mongodb: # New service for MongoDB
     image: mongo:6.0 # Use a specific version for stability
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     ports:
       - "27017:27017" # Expose MongoDB port to host (for direct access/tools)
     volumes:
@@ -36,6 +32,21 @@ services:
       # - MONGO_INITDB_ROOT_USERNAME=admin
       # - MONGO_INITDB_ROOT_PASSWORD=password
       - MONGO_URI=mongodb://mongodb:27017/smarthome # Internal MongoDB URI for the container
+    healthcheck:
+      test: ["CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/localhost/27017"]
+      interval: 3s
+      timeout: 2s
+      retries: 40
+
+  mongo-init-replica:
+    image: mongo:6.0
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - ./init-mongo.sh:/init-mongo.sh:ro
+    entrypoint: ["bash", "-c", "/init-mongo.sh"]
+    restart: "no"
 
 volumes: # Define named volume for data persistence
   mongodb_data:

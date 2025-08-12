@@ -2,24 +2,21 @@
 import User from "./User";
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import { MongoMemoryServer } from "mongodb-memory-server";
+
+let mongoServer: MongoMemoryServer;
 
 // Mock mongoose connect/disconnect for isolated model testing
 beforeAll(async () => {
-  // Use an in-memory database for testing to avoid actual DB connections
-  // For simplicity, we'll mock it for now or connect to a test DB later if needed
-  // For now, assume a connection exists for model methods to run.
-  // In a full testing setup, you'd use something like 'mongodb-memory-server'.
-  // For this unit test of the model itself, we primarily focus on methods.
-  // We'll add a proper test DB connection for integration tests later.
-  await mongoose.connect("mongodb://localhost/testdb", {
-    // useNewUrlParser: true,
-    // useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-  } as any); // Type assertion as Mongoose options can be tricky
+  //                               // We'll add a proper test DB connection for integration tests later.
+  mongoServer = await MongoMemoryServer.create();
+  const mongoUri = mongoServer.getUri();
+  await mongoose.connect(mongoUri);
 });
 
 afterAll(async () => {
-  await mongoose.connection.close();
+  await mongoose.disconnect();
+  await mongoServer.stop();
 });
 
 describe("User Model", () => {

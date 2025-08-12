@@ -1,27 +1,25 @@
 // smart-home-automation-api/src/types/user.d.ts
 import { Document, Types } from "mongoose";
 
-// Define the interface for a Household document
 export interface IHousehold extends Document {
-  _id: Types.ObjectId; // MongoDB ObjectId
+  _id: Types.ObjectId;
   name: string;
-  owner: Types.ObjectId; // Reference to the User who owns this household
-  members: Types.ObjectId[]; // Array of references to User documents
+  owner: Types.ObjectId;
+  members: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-// Define the interface for a User document
 export interface IUser extends Document {
-  _id: Types.ObjectId; // MongoDB ObjectId
+  _id: Types.ObjectId;
   username: string;
   email: string;
-  password?: string; // Optional because it won't be retrieved with user data generally
-  households: Types.ObjectId[]; // Array of references to Household documents
-  role: "owner" | "member"; // Basic role management
+  password?: string;
+  households: (Types.ObjectId | IHousehold)[];
+  role: "owner" | "member";
   createdAt: Date;
   updatedAt: Date;
+  isActive: boolean; // NEW: For soft deletion
 
-  // Method to compare passwords (added in model definition later)
   comparePassword(candidatePassword: string): Promise<boolean>;
 }

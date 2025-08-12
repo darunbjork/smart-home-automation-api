@@ -10,7 +10,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 interface EnvConfig {
   PORT: number;
   NODE_ENV: string;
-  MONGODB_URI: string; // Added MONGODB_URI
+  MONGO_URI: string; // Added MONGODB_URI
   JWT_SECRET?: string; // Will add later
   JWT_REFRESH_SECRET?: string; // Will add later
 }
@@ -29,7 +29,7 @@ function getEnv(name: string): string {
 export const env: EnvConfig = {
   PORT: parseInt(getEnv("PORT") || "3000", 10),
   NODE_ENV: getEnv("NODE_ENV") || "development",
-  MONGODB_URI: getEnv("MONGODB_URI"), // Now required
+  MONGO_URI: getEnv("MONGO_URI"), // Now required
 };
 
 if (env.NODE_ENV === "development") {
@@ -37,6 +37,6 @@ if (env.NODE_ENV === "development") {
   console.log(`  PORT: ${env.PORT}`);
   console.log(`  NODE_ENV: ${env.NODE_ENV}`);
   console.log(
-    `  MONGODB_URI: ${env.MONGODB_URI.replace(/:(\/\/)?([^@:]+:[^@:]*)?@/, ":$1<redacted>@")}`,
+    `  MONGO_URI: ${env.MONGO_URI.replace(/:(\/\/)?([^@:]+:[^@:]*)?@/, ":$1<redacted>@")}`,
   ); // Redact sensitive parts for logs
 }

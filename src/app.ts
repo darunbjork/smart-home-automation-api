@@ -1,62 +1,155 @@
+// smart-home-automation-api/src/app.ts
 import express, { Application, Request, Response, NextFunction } from "express";
-import helmet from "helmet"; // Security headers
-import cors from "cors"; // Cross-Origin Resource Sharing
-import rateLimit from "express-rate-limit"; // Rate limiting
+import helmet from "helmet";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
 import healthRoutes from "./routes/health.routes";
-import userRoutes from "./routes/user.routes"; // Import user routes
+import userRoutes from "./routes/user.routes"; // Re-import user routes
 import { env } from "./config/env";
 import logger from "./utils/logger";
-import { CustomError } from "./middleware/error.middleware"; // Import CustomError
+import { CustomError } from "./middleware/error.middleware";
 
 const app: Application = express();
 
-// --- Security Middleware (Pillar 2: Security Infrastructure) ---
-// Helmet helps secure Express apps by setting various HTTP headers.
-// It's a collection of 14 smaller middleware functions that set security-related HTTP headers.
 app.use(helmet());
-
-// CORS (Cross-Origin Resource Sharing)
-// Allows specific origins to access our API. In production, this should be restricted
-// to known frontend domains. For now, we allow all for development ease.
-// Senior insight: In production, explicitly list allowed origins like:
-// cors({ origin: ["https://your-frontend.com", "https://your-mobile-app.com"] })
 app.use(cors());
 
-// Rate Limiting (Pillar 2: Security Infrastructure)
-// Basic rate limiting to protect against brute-force attacks and abuse.
-// Allows 100 requests per 15 minutes per IP address.
-// This is a foundational security measure.
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: "Too many requests from this IP, please try again after 15 minutes",
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use(apiLimiter);
 
-// --- Core Express Middleware ---
-// Body parser to parse JSON requests.
-// This is essential for handling incoming data from client applications.
 app.use(express.json());
-
-// URL-encoded body parser for traditional form submissions.
 app.use(express.urlencoded({ extended: true }));
 
 // --- Routes ---
-// Health check route - crucial for load balancers and container orchestration.
 app.use("/", healthRoutes);
-app.use("/auth", userRoutes); // Use user routes under the /auth prefix
+// Senior insight: Changed prefix from '/auth' to '/users' for general user management
+// Authentication routes remain under `/users` with /register, /login.
+app.use("/users", userRoutes);
 
-// --- Global Error Handling Middleware (Pillar 3: Error Handling & Observability) ---
-// This is our catch-all for unhandled errors.
-// A senior engineer ensures that errors are gracefully handled and not leaked to clients.
-app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+// Define Swagger/OpenAPI schemas for common responses/models for documentation.
+// This is a setup for our Swagger documentation, will be expanded later.
+/**
+ * @swagger
+ * components:
+ * schemas:
+ * UserResponse:
+ * type: object
+ * properties:
+ * _id:
+ * type: string
+ * description: The user ID.
+ * example: 60f8b8e0c8d7c1a0c8d7c1a0
+ * username:
+ * type: string
+ * description: The user's chosen username.
+ * example: john_doe
+ * email:
+ * type: string
+ * format: email
+ * description: The user's email address.
+ * example: john.doe @example.com
+ * households:
+ * type: array
+ * items:
+ * type: object
+ * properties:
+ * _id:
+ * type: string
+ * example: 60f8b8e0c8d7c1a0c8d7c1a1
+ * name:
+ * type: string
+ * example: "Doe Family Home"
+ * role:
+ * type: string
+ * description: The user's role (owner or member).
+ * example: owner
+ * createdAt:
+ * type: string
+ * format: date-time
+ * description: The date the user was created.
+ * example: 2025-07-21T10:00:00Z
+ * updatedAt:
+ * type: string
+ * format: date-time
+ * description: The date the user was last updated.
+ * example: 2025-07-21T10:00:00Z
+ * responses:
+ * BadRequest:
+ * description: Invalid input data.
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * properties:
+ * error:
+ * type: object
+ * properties:
+ * message:
+ * type: string
+ * example: "Validation failed: Username must be between 3 and 30 characters"
+ * Unauthorized:
+ * description: Authentication failed.
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * properties:
+ * error:
+ * type: object
+ * properties:
+ * message:
+ * type: string
+ * example: "Invalid credentials."
+ * NotFound:
+ * description: Resource not found.
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * properties:
+ * error:
+ * type: object
+ * properties:
+ * message:
+ * type: string
+ * example: "User not found."
+ * Conflict:
+ * description: Resource conflict (e.g., duplicate unique key).
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * properties:
+ * error:
+ * type: object
+ * properties:
+ * message:
+ * type: string
+ * example: "Username or email already exists."
+ * InternalServerError:
+ * description: Unexpected internal server error.
+ * content:
+ * application/json:
+ * schema:
+ * type: object
+ * properties:
+ * error:
+ * type: object
+ * properties:
+ * message:
+ * type: string
+ * example: "An unexpected error occurred."
+ */
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   logger.error("Unhandled API Error:", err);
 
-  // Determine status code: use custom error's statusCode or default to 500
   const statusCode = err instanceof CustomError ? err.statusCode : 500;
-  // Determine message: hide internal message in production
   const message =
     env.NODE_ENV === "production"
       ? "An unexpected error occurred."
@@ -70,5 +163,4 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-// Export the app for server.ts to use and for testing.
 export default app;

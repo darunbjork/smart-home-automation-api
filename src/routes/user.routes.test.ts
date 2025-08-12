@@ -25,7 +25,7 @@ describe("User Authentication and Household Management", () => {
   });
 
   it("should register a new user and create a household successfully", async () => {
-    const res = await request(app).post("/auth/register").send({
+    const res = await request(app).post("/users/register").send({
       username: "testuser",
       email: "test@example.com",
       password: "password123",
@@ -56,14 +56,14 @@ describe("User Authentication and Household Management", () => {
   });
 
   it("should not register a user with duplicate username or email", async () => {
-    await request(app).post("/auth/register").send({
+    await request(app).post("/users/register").send({
       username: "duplicateuser",
       email: "duplicate@example.com",
       password: "password123",
       householdName: "Duplicate Household",
     });
 
-    const res1 = await request(app).post("/auth/register").send({
+    const res1 = await request(app).post("/users/register").send({
       username: "duplicateuser",
       email: "another@example.com",
       password: "password123",
@@ -74,7 +74,7 @@ describe("User Authentication and Household Management", () => {
       "Username or email already exists.",
     );
 
-    const res2 = await request(app).post("/auth/register").send({
+    const res2 = await request(app).post("/users/register").send({
       username: "uniqueuser",
       email: "duplicate@example.com",
       password: "password123",
@@ -87,14 +87,14 @@ describe("User Authentication and Household Management", () => {
   });
 
   it("should log in an existing user successfully", async () => {
-    await request(app).post("/auth/register").send({
+    await request(app).post("/users/register").send({
       username: "loginuser",
       email: "login@example.com",
       password: "loginpassword",
       householdName: "Login Household",
     });
 
-    const res = await request(app).post("/auth/login").send({
+    const res = await request(app).post("/users/login").send({
       email: "login@example.com",
       password: "loginpassword",
     });
@@ -108,15 +108,18 @@ describe("User Authentication and Household Management", () => {
 
   it("should not log in with invalid credentials", async () => {
     // Try to login without registering first
-    const res1 = await request(app).post("/auth/login").send({
+    const res1 = await request(app).post("/users/login").send({
       email: "nonexistent@example.com",
       password: "wrongpassword",
     });
     expect(res1.statusCode).toEqual(401);
-    expect(res1.body.error.message).toEqual("Invalid credentials.");
+    console.log(res1.body);
+    expect(res1.body.error.message).toEqual(
+      "Login failed: Invalid credentials.",
+    );
 
     // Register a user
-    await request(app).post("/auth/register").send({
+    await request(app).post("/users/register").send({
       username: "anotheruser",
       email: "another@example.com",
       password: "correctpassword",
@@ -124,7 +127,7 @@ describe("User Authentication and Household Management", () => {
     });
 
     // Try to login with wrong password
-    const res2 = await request(app).post("/auth/login").send({
+    const res2 = await request(app).post("/users/login").send({
       email: "another@example.com",
       password: "wrongpassword",
     });
@@ -133,7 +136,7 @@ describe("User Authentication and Household Management", () => {
   });
 
   it("should return 400 if required fields are missing for registration", async () => {
-    const res = await request(app).post("/auth/register").send({
+    const res = await request(app).post("/users/register").send({
       username: "incomplete",
       email: "incomplete@example.com",
       // password and householdName are missing
@@ -145,11 +148,13 @@ describe("User Authentication and Household Management", () => {
   });
 
   it("should return 400 if required fields are missing for login", async () => {
-    const res = await request(app).post("/auth/login").send({
+    const res = await request(app).post("/users/login").send({
       email: "missing@example.com",
       // password is missing
     });
     expect(res.statusCode).toEqual(400);
-    expect(res.body.error.message).toEqual("Email and password are required");
+    expect(res.body.error.message).toEqual(
+      "Validation failed: Password cannot be empty",
+    );
   });
 });
