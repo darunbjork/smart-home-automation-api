@@ -8,6 +8,7 @@ export interface IHousehold extends Document {
   members: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
+  __v?: number; // Added for Mongoose version key
 }
 
 export interface IUser extends Document {

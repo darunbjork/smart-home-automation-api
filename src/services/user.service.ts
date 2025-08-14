@@ -4,6 +4,7 @@ import Household from "../models/Household";
 import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
 import { IUser } from "../types/user.d"; // Import IUser for type hints
+import { generateAccessToken, generateRefreshToken } from "./auth.service"; // NEW: Import token generation
 
 // Register a new user and create their initial household
 export const registerUser = async (
@@ -11,6 +12,7 @@ export const registerUser = async (
   email: string,
   password: string,
   householdName: string,
+  _role: "owner" | "member" = "member", // Add optional role parameter with default
 ): Promise<IUser> => {
   const existingUser = await User.findOne({ $or: [{ username }, { email }] });
 
@@ -25,7 +27,7 @@ export const registerUser = async (
     username,
     email,
     password,
-    role: "owner",
+    role: _role,
     isActive: true,
   });
   const household = new Household({
@@ -63,9 +65,8 @@ export const registerUser = async (
 export const loginUser = async (
   email: string,
   password: string,
-): Promise<IUser> => {
+): Promise<{ user: IUser; accessToken: string; refreshToken: string }> => {
   try {
-    // Only fetch active users. Senior insight: Soft delete requires filtering.
     const user = await User.findOne({ email, isActive: true })
       .select("+password")
       .populate("households");
@@ -78,8 +79,16 @@ export const loginUser = async (
       throw new CustomError("Invalid credentials.", 401);
     }
 
+    logger.debug(
+      `User object before token generation: ${JSON.stringify(user)}`,
+    );
+
+    // Senior insight: Generate tokens upon successful login.
+    const accessToken = generateAccessToken(user);
+    const refreshToken = await generateRefreshToken(user); // Await for DB operation
+
     logger.info(`User ${user.username} logged in successfully.`);
-    return user;
+    return { user, accessToken, refreshToken }; // Return tokens
   } catch (error: unknown) {
     const asError = error as { message: string; statusCode?: number };
     throw new CustomError(
@@ -197,3 +206,4 @@ export const deleteUser = async (userId: string): Promise<void> => {
   // 4. Archiving their data for compliance/analytics
   // For now, we only soft-delete the user document itself.
 };
+export { generateAccessToken };

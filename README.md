@@ -21,6 +21,7 @@ This repository contains the backend API for the Smart Home Automation System. I
 ## Progress Log
 
 - [**Day 2: Data Layer Excellence**](docs/day-2.md): Integrated MongoDB and Mongoose, defined User and Household models, and implemented secure authentication with bcrypt.
+- [**Day 4: Security Infrastructure**](docs/day-4.md): Implemented JWT authentication with refresh token rotation and authorization middleware.
 
 ## Getting Started
 
@@ -98,30 +99,7 @@ npm test -- --coverage
 
 ## Project Structure
 
-The project follows a modular, layer-based architecture:
-
-```
-smart-home-automation-api/
-├── src/
-│   ├── config/         # Environment variables and configuration
-│   ├── controllers/    # Express controllers (request/response handling)
-│   ├── middleware/     # Custom Express middleware
-│   ├── models/         # Mongoose data models
-│   ├── routes/         # API routes
-│   ├── services/       # Business logic
-│   ├── utils/          # Utility functions (e.g., logger)
-│   ├── app.ts          # Express application setup
-│   └── server.ts       # Server entry point
-├── .env                # Environment variables (not committed)
-├── .gitignore          # Files to ignore in git
-├── Dockerfile          # Docker build instructions
-├── docker-compose.yml  # Docker Compose configuration
-├── jest.config.js      # Jest test configuration
-├── package.json        # Project dependencies and scripts
-└── tsconfig.json       # TypeScript compiler options
-```
-
-## API Documentation
+### API Documentation
 
 API documentation will be generated using Swagger and will be available at the `/api-docs` endpoint in the future. For now, the available endpoints can be found in the `src/routes` directory.
 

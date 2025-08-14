@@ -9,7 +9,7 @@ const connectDB = async () => {
 
     if (!mongoURI) {
       // Senior insight: Fail fast if critical configuration is missing.
-      throw new Error("MONGODB_URI is not defined in environment variables.");
+      throw new Error("MONGO_URI is not defined in environment variables.");
     }
 
     // Connect to MongoDB using Mongoose

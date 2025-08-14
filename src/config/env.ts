@@ -2,25 +2,27 @@
 import dotenv from "dotenv";
 import path from "path";
 
-// Load environment variables from .env file based on NODE_ENV
-// In a production setup, these would typically be injected by the orchestrator (e.g., Docker Swarm, Kubernetes)
-// or a secret management service. For development, .env is convenient.
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 interface EnvConfig {
   PORT: number;
   NODE_ENV: string;
-  MONGO_URI: string; // Added MONGODB_URI
-  JWT_SECRET?: string; // Will add later
-  JWT_REFRESH_SECRET?: string; // Will add later
+  MONGO_URI: string;
+  JWT_SECRET: string; // Added JWT_SECRET
+  JWT_REFRESH_SECRET: string; // Added JWT_REFRESH_SECRET
+  ACCESS_TOKEN_EXPIRES_IN: string; // Added ACCESS_TOKEN_EXPIRES_IN
+  REFRESH_TOKEN_EXPIRES_IN: string; // Added REFRESH_TOKEN_EXPIRES_IN
 }
 
-// Ensure all required environment variables are set
 function getEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    // A senior engineer knows that critical configuration must be present
-    // and throws explicit errors if missing.
+    // Senior Insight: Use a more specific error for critical env vars like secrets.
+    if (name.includes("SECRET")) {
+      throw new Error(
+        `CRITICAL: Environment variable ${name} is not set. This is a security risk.`,
+      );
+    }
     throw new Error(`Environment variable ${name} is not set.`);
   }
   return value;
@@ -29,14 +31,24 @@ function getEnv(name: string): string {
 export const env: EnvConfig = {
   PORT: parseInt(getEnv("PORT") || "3000", 10),
   NODE_ENV: getEnv("NODE_ENV") || "development",
-  MONGO_URI: getEnv("MONGO_URI"), // Now required
+  MONGO_URI: getEnv("MONGO_URI"),
+  JWT_SECRET: getEnv("JWT_SECRET"),
+  JWT_REFRESH_SECRET: getEnv("JWT_REFRESH_SECRET"),
+  ACCESS_TOKEN_EXPIRES_IN: getEnv("ACCESS_TOKEN_EXPIRES_IN"),
+  REFRESH_TOKEN_EXPIRES_IN: getEnv("REFRESH_TOKEN_EXPIRES_IN"),
 };
 
 if (env.NODE_ENV === "development") {
-  console.log("Loaded Environment Variables:");
+  console.log("Loaded Environment Variables (sensitive redacted):");
   console.log(`  PORT: ${env.PORT}`);
   console.log(`  NODE_ENV: ${env.NODE_ENV}`);
   console.log(
-    `  MONGO_URI: ${env.MONGO_URI.replace(/:(\/\/)?([^@:]+:[^@:]*)?@/, ":$1<redacted>@")}`,
-  ); // Redact sensitive parts for logs
+    `  MONGODB_URI: ${env.MONGO_URI.replace(/:(\\ |\/)?([^ @:]+:[^ @:]*)? @/, ":$1<redacted> @")}`,
+  );
+  console.log(`  ACCESS_TOKEN_EXPIRES_IN: ${env.ACCESS_TOKEN_EXPIRES_IN}`);
+  console.log(`  REFRESH_TOKEN_EXPIRES_IN: ${env.REFRESH_TOKEN_EXPIRES_IN}`);
+  console.log(`  JWT_SECRET: ${env.JWT_SECRET ? "<redacted>" : "NOT SET!"}`); // Redact secrets
+  console.log(
+    `  JWT_REFRESH_SECRET: ${env.JWT_REFRESH_SECRET ? "<redacted>" : "NOT SET!"}`,
+  ); // Redact secrets
 }
