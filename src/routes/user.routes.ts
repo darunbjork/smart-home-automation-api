@@ -1,16 +1,20 @@
 // smart-home-automation-api/src/routes/user.routes.ts
-import { Router } from 'express';
-import * as userController from '../controllers/user.controller';
-import { validateRegisterUser, validateLoginUser, validateUpdateUser } from '../middleware/validation.middleware';
-import { authenticate, authorize } from '../middleware/auth.middleware'; // NEW: Import auth middleware
+import { Router } from "express";
+import * as userController from "../controllers/user.controller";
+import {
+  validateRegisterUser,
+  validateLoginUser,
+  validateUpdateUser,
+} from "../middleware/validation.middleware";
+import { authenticate, authorize } from "../middleware/auth.middleware"; // NEW: Import auth middleware
 
 const router = Router();
 
 // Authentication Routes
-router.post('/register', validateRegisterUser, userController.registerUser);
-router.post('/login', validateLoginUser, userController.loginUser);
-router.get('/refresh', userController.refreshAccessToken); // New endpoint for token refresh
-router.post('/logout', userController.logoutUser); // New endpoint for logout
+router.post("/register", validateRegisterUser, userController.registerUser);
+router.post("/login", validateLoginUser, userController.loginUser);
+router.get("/refresh", userController.refreshAccessToken); // New endpoint for token refresh
+router.post("/logout", userController.logoutUser); // New endpoint for logout
 
 // User Management Routes (now protected)
 /**
@@ -41,7 +45,7 @@ router.post('/logout', userController.logoutUser); // New endpoint for logout
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.get('/', authenticate, authorize(['owner']), userController.getAllUsers);
+router.get("/", authenticate, authorize(["owner"]), userController.getAllUsers);
 
 /**
  * @swagger
@@ -79,7 +83,7 @@ router.get('/', authenticate, authorize(['owner']), userController.getAllUsers);
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.get('/:id', authenticate, userController.getUserById); // Authorization check moved to controller for flexibility
+router.get("/:id", authenticate, userController.getUserById); // Authorization check moved to controller for flexibility
 
 /**
  * @swagger
@@ -141,7 +145,12 @@ router.get('/:id', authenticate, userController.getUserById); // Authorization c
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.patch('/:id', authenticate, validateUpdateUser, userController.updateUser); // Authorization check moved to controller for flexibility
+router.patch(
+  "/:id",
+  authenticate,
+  validateUpdateUser,
+  userController.updateUser,
+); // Authorization check moved to controller for flexibility
 
 /**
  * @swagger
@@ -179,7 +188,12 @@ router.patch('/:id', authenticate, validateUpdateUser, userController.updateUser
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.delete('/:id', authenticate, authorize(['owner']), userController.deleteUser); // Only owners can delete
+router.delete(
+  "/:id",
+  authenticate,
+  authorize(["owner"]),
+  userController.deleteUser,
+); // Only owners can delete
 // Note: Owners cannot delete themselves is handled in controller for granular control.
 
 export default router;

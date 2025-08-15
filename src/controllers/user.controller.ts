@@ -10,8 +10,11 @@ import { IUser, IHousehold } from "../types/user.d"; // NEW: Import IUser and IH
 // Helper function to prepare user response (avoids sending sensitive data)
 const prepareUserResponse = (user: IUser) => {
   const {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     password: _password,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     __v: _v,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isActive: _isActive,
     ...userResponse
   } = user.toObject({
@@ -21,16 +24,34 @@ const prepareUserResponse = (user: IUser) => {
 
   if (userResponse.households && Array.isArray(userResponse.households)) {
     userResponse.households = userResponse.households.map((h: IHousehold) => {
-      // Ensure populated household objects are also cleaned
-      const {
-        __v: _householdV,
-        createdAt: _createdAt,
-        updatedAt: _updatedAt,
-        owner: _owner,
-        members: _members,
-        ...householdClean
-      } = h;
-      return householdClean;
+      // Type guard to check if h is an IHousehold document
+      if (
+        h &&
+        typeof h === "object" &&
+        "toObject" in h &&
+        typeof h.toObject === "function"
+      ) {
+        const householdObj = (h as IHousehold).toObject({
+          getters: true,
+          virtuals: false,
+        });
+        const {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          __v: _householdV,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          createdAt: _createdAt,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          updatedAt: _updatedAt,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          owner: _owner,
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          members: _members,
+          ...householdClean
+        } = householdObj;
+        return householdClean;
+      }
+      // If h is not a populated IHousehold document (e.g., it's just an ObjectId), return it as is.
+      return h;
     });
   }
   return userResponse;

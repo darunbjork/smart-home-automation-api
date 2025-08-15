@@ -1,6 +1,4 @@
 # smart-home-automation-api/docker-compose.yml
-version: "3.8"
-
 services:
   api:
     build:

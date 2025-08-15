@@ -1,5 +1,10 @@
 // smart-home-automation-api/src/middleware/validation.middleware.ts
-import { validationResult, body, ValidationError } from "express-validator";
+import {
+  validationResult,
+  body,
+  param,
+  ValidationError,
+} from "express-validator";
 import { Request, Response, NextFunction } from "express";
 import { CustomError } from "./error.middleware";
 
@@ -38,13 +43,7 @@ export const validateRegisterUser = [
     .normalizeEmail(),
   body("password")
     .isLength({ min: 8 })
-    .withMessage("Password must be at least 8 characters long")
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).*$/,
-    )
-    .withMessage(
-      "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
-    ),
+    .withMessage("Password must be at least 8 characters long"),
   body("householdName")
     .isLength({ min: 3, max: 50 })
     .withMessage("Household name must be between 3 and 50 characters"),
@@ -75,5 +74,52 @@ export const validateUpdateUser = [
     .optional()
     .isIn(["owner", "member"])
     .withMessage('Role must be either "owner" or "member"'),
+  validateRequest,
+];
+
+// Validation rules for device creation
+export const validateCreateDevice = [
+  body("name")
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Device name must be between 1 and 50 characters")
+    .trim(),
+  body("type")
+    .isLength({ min: 1, max: 30 })
+    .withMessage("Device type must be between 1 and 30 characters")
+    .trim(),
+  body("householdId").isMongoId().withMessage("Invalid household ID"),
+  body("data")
+    .optional()
+    .isObject()
+    .withMessage("Device data must be a JSON object"),
+  validateRequest,
+];
+
+// Validation rules for device update
+export const validateUpdateDevice = [
+  body("name")
+    .optional()
+    .isLength({ min: 1, max: 50 })
+    .withMessage("Device name must be between 1 and 50 characters")
+    .trim(),
+  body("type")
+    .optional()
+    .isLength({ min: 1, max: 30 })
+    .withMessage("Device type must be between 1 and 30 characters")
+    .trim(),
+  body("status")
+    .optional()
+    .isIn(["online", "offline", "unknown"])
+    .withMessage("Invalid device status"),
+  body("data")
+    .optional()
+    .isObject()
+    .withMessage("Device data must be a JSON object"),
+  validateRequest,
+];
+
+// Validation rules for fetching/updating/deleting a device
+export const validateDeviceParam = [
+  param("id").isMongoId().withMessage("Invalid device ID"),
   validateRequest,
 ];

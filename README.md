@@ -22,6 +22,7 @@ This repository contains the backend API for the Smart Home Automation System. I
 
 - [**Day 2: Data Layer Excellence**](docs/day-2.md): Integrated MongoDB and Mongoose, defined User and Household models, and implemented secure authentication with bcrypt.
 - [**Day 4: Security Infrastructure**](docs/day-4.md): Implemented JWT authentication with refresh token rotation and authorization middleware.
+- [**Day 5: Scalable Service Design**](docs/day-5.md): Implemented a complete Smart Home Device Management system with multi-tenancy support, including Device model, service, controllers, and routes.
 
 ## Getting Started
 
