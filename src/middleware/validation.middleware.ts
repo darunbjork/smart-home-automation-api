@@ -44,9 +44,6 @@ export const validateRegisterUser = [
   body("password")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters long"),
-  body("householdName")
-    .isLength({ min: 3, max: 50 })
-    .withMessage("Household name must be between 3 and 50 characters"),
   validateRequest, // Apply our custom validation checker
 ];
 
@@ -121,5 +118,30 @@ export const validateUpdateDevice = [
 // Validation rules for fetching/updating/deleting a device
 export const validateDeviceParam = [
   param("id").isMongoId().withMessage("Invalid device ID"),
+  validateRequest,
+];
+
+// Validation rules for inviting a user
+export const validateInviteUser = [
+  body("householdId").isMongoId().withMessage("Invalid household ID"),
+  body("inviteeEmail").isEmail().withMessage("Invalid email address"),
+  validateRequest,
+];
+
+// Validation rules for accepting/declining an invitation
+export const validateInvitationToken = [
+  body("token").isString().withMessage("Invalid invitation token"),
+  validateRequest,
+];
+
+// Validation rules for leaving a household
+export const validateLeaveHousehold = [
+  body("householdId").isMongoId().withMessage("Invalid household ID"),
+  validateRequest,
+];
+
+// Validation rules for household ID in URL parameters
+export const validateHouseholdParam = [
+  param("id").isMongoId().withMessage("Invalid household ID"),
   validateRequest,
 ];

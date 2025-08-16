@@ -95,15 +95,10 @@ export const registerUser = async (
   res: Response,
   next: NextFunction,
 ) => {
+  logger.info("Register user request received");
   try {
-    const { username, email, password, householdName, role } = req.body;
-    const user = await userService.registerUser(
-      username,
-      email,
-      password,
-      householdName,
-      role, // Pass the role
-    );
+    const { username, email, password } = req.body;
+    const user = await userService.registerUser(username, email, password);
     res.status(201).json({
       message: "User registered successfully and household created.",
       user: prepareUserResponse(user),

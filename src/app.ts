@@ -1,14 +1,16 @@
 // smart-home-automation-api/src/app.ts
-import express, { Application } from "express";
+import express, { Application, Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import healthRoutes from "./routes/health.routes";
 import userRoutes from "./routes/user.routes";
-import deviceRoutes from "./routes/device.routes"; // NEW: Import device routes
+import deviceRoutes from "./routes/device.routes";
+import householdRoutes from "./routes/household.routes"; // NEW: Import household routes
 import { env } from "./config/env";
-import { errorHandler } from "./middleware/error.middleware";
+import logger from "./utils/logger";
+import { CustomError } from "./middleware/error.middleware";
 
 const app: Application = express();
 
@@ -39,7 +41,8 @@ app.use(cookieParser());
 // --- Routes ---
 app.use("/", healthRoutes);
 app.use("/users", userRoutes);
-app.use("/devices", deviceRoutes); // NEW: Add device routes
+app.use("/devices", deviceRoutes);
+app.use("/households", householdRoutes); // NEW: Add household routes
 
 // Define Swagger/OpenAPI schemas and responses...
 /**
@@ -51,31 +54,50 @@ app.use("/devices", deviceRoutes); // NEW: Add device routes
  * scheme: bearer
  * bearerFormat: JWT
  * schemas:
- * DeviceResponse: # NEW: Schema for Device object in responses
+ * Invitation: # NEW: Schema for Invitation object
  * type: object
  * properties:
  * _id:
  * type: string
- * example: "60f8b8e0c8d7c1a0c8d7c1a2"
- * name:
- * type: string
- * example: "Living Room Light"
- * type:
- * type: string
- * example: "light"
- * status:
- * type: string
- * enum: ["online", "offline", "unknown"]
- * example: "online"
+ * example: "60f8b8e0c8d7c1a0c8d7c1a3"
  * household:
  * type: string
  * example: "60f8b8e0c8d7c1a0c8d7c1a1"
+ * inviter:
+ * type: string
+ * example: "60f8b8e0c8d7c1a0c8d7c1a0"
+ * inviteeEmail:
+ * type: string
+ * example: "member @example.com"
+ * token:
+ * type: string
+ * example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+ * expiresAt:
+ * type: string
+ * format: date-time
+ * example: "2025-07-22T10:00:00Z"
+ * HouseholdResponse: # NEW: Schema for Household object
+ * type: object
+ * properties:
+ * _id:
+ * type: string
+ * example: "60f8b8e0c8d7c1a0c8d7c1a1"
+ * name:
+ * type: string
+ * example: "Doe Family Home"
  * owner:
  * type: string
  * example: "60f8b8e0c8d7c1a0c8d7c1a0"
- * data:
- * type: object
- * example: { "on": true, "brightness": 80 }
+ * members:
+ * type: array
+ * items:
+ * type: string
+ * example: "60f8b8e0c8d7c1a0c8d7c1a0"
+ * devices:
+ * type: array
+ * items:
+ * type: string
+ * example: "60f8b8e0c8d7c1a0c8d7c1a2"
  * createdAt:
  * type: string
  * format: date-time
@@ -89,7 +111,22 @@ app.use("/devices", deviceRoutes); // NEW: Add device routes
  * responses:
  * ...
  */
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  logger.error("Error handler middleware caught an error:", err);
+  logger.error("Unhandled API Error:", err);
 
-app.use(errorHandler);
+  const statusCode = err instanceof CustomError ? err.statusCode : 500;
+  const message =
+    env.NODE_ENV === "production"
+      ? "An unexpected error occurred."
+      : err.message;
+
+  res.status(statusCode).json({
+    error: {
+      message: message,
+      ...(env.NODE_ENV === "development" && { stack: err.stack }),
+    },
+  });
+});
 
 export default app;

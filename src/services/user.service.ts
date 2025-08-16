@@ -1,63 +1,68 @@
 // smart-home-automation-api/src/services/user.service.ts
 import User from "../models/User";
-import Household from "../models/Household";
+import Household from "../models/Household"; // Make sure Household is imported
 import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
-import { IUser } from "../types/user.d"; // Import IUser for type hints
-import { generateAccessToken, generateRefreshToken } from "./auth.service"; // NEW: Import token generation
+import { IUser } from "../types/user.d";
+import { generateAccessToken, generateRefreshToken } from "./auth.service";
 
-// Register a new user and create their initial household
+// Register a new user and create their first household
 export const registerUser = async (
   username: string,
   email: string,
   password: string,
-  householdName: string,
-  _role: "owner" | "member" = "member", // Add optional role parameter with default
 ): Promise<IUser> => {
-  const existingUser = await User.findOne({ $or: [{ username }, { email }] });
-
-  if (existingUser) {
-    throw new CustomError(
-      "Registration failed: Username or email already exists.",
-      409,
-    );
-  }
-
-  const user = new User({
-    username,
-    email,
-    password,
-    role: _role,
-    isActive: true,
-  });
-  const household = new Household({
-    name: householdName,
-    owner: user._id,
-    members: [user._id],
-  });
-
-  const session = await User.startSession();
-  session.startTransaction();
   try {
-    await user.save({ session });
-    await household.save({ session });
-    user.households.push(household._id);
-    await user.save({ session });
+    // Check if the user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      throw new CustomError("A user with this email already exists.", 409);
+    }
 
-    await session.commitTransaction();
-    logger.info(
-      `User ${user.username} registered and household ${household.name} created.`,
+    // Senior Insight: Use a transaction to ensure user and household are created atomically.
+    const session = await User.startSession();
+    session.startTransaction();
+    try {
+      const user = new User({
+        username,
+        email,
+        password,
+        role: "owner", // Default role for a new user is 'owner'
+      });
+      await user.save({ session });
+
+      const household = new Household({
+        name: `${username}'s Home`, // Give the first household a default name
+        owner: user._id,
+        members: [user._id], // Add the user as the first member
+      });
+      await household.save({ session });
+
+      // Link the household to the user
+      user.households.push(household._id);
+      await user.save({ session });
+
+      await session.commitTransaction();
+      logger.info(
+        `New user ${user.username} registered with a new household: ${household.name}.`,
+      );
+      return user;
+    } catch (error) {
+      await session.abortTransaction();
+      logger.error(
+        "Failed to register user and create household due to transaction error:",
+        error,
+      );
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  } catch (error: unknown) {
+    const asError = error as { message: string; statusCode?: number };
+    throw new CustomError(
+      `Registration failed: ${asError.message}`,
+      asError.statusCode || 500,
     );
-    return user;
-  } catch (transactionError) {
-    await session.abortTransaction();
-    logger.error(
-      "Transaction failed during user registration:",
-      transactionError,
-    );
-    throw transactionError;
-  } finally {
-    session.endSession();
   }
 };
 
