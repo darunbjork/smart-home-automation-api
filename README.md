@@ -1,135 +1,112 @@
 # Smart Home Automation API
 
-This repository contains the backend API for the Smart Home Automation System. It is a production-grade Node.js application built with TypeScript, Express, and Docker.
+## 🏠 Project Overview
 
-## Table of Contents
+This is the backend API for a smart home automation system. It is built using Node.js, Express, and TypeScript, with a MongoDB database. The API provides a secure and scalable foundation for managing users, households, devices, and a multi-tenant invitation system.
 
-- [Progress Log](#progress-log)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-- [Running the Application](#running-the-application)
-  - [Development Mode](#development-mode)
-  - [Production Mode](#production-mode)
-- [Running Tests](#running-tests)
-- [Project Structure](#project-structure)
-- [API Documentation](#api-documentation)
-- [Architecture](#architecture)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
+## ✨ Key Features
 
-## Progress Log
+- **Authentication & Authorization:** Secure user registration, login, and token-based access control.
+- **Multi-Tenancy:** Robust data isolation ensuring users only access resources (households, devices) they have permission for.
+- **Device Management:** A flexible API for creating, updating, and controlling smart home devices.
+- **Household Management:** An invitation-based system for adding and managing household members.
+- **Data Integrity:** Cascading deletions and atomic transactions to prevent orphaned data.
+- **Scalable Architecture:** A service-oriented design that separates concerns and is easy to maintain.
 
-- [**Day 2: Data Layer Excellence**](docs/day-2.md): Integrated MongoDB and Mongoose, defined User and Household models, and implemented secure authentication with bcrypt.
-- [**Day 4: Security Infrastructure**](docs/day-4.md): Implemented JWT authentication with refresh token rotation and authorization middleware.
-- [**Day 5: Scalable Service Design**](docs/day-5.md): Implemented a complete Smart Home Device Management system with multi-tenancy support, including Device model, service, controllers, and routes.
-- [**Day 6: Household and User Management**](docs/day-6.md): Implemented a comprehensive household and user management system with an invitation system and RBAC.
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v20.x or later)
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
-- [Git](https://git-scm.com/)
+- [Node.js](https://nodejs.org/) (v18 or higher)
 
 ### Installation
 
 1.  **Clone the repository:**
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/YOUR_GITHUB_USERNAME/smart-home-automation-api.git
     cd smart-home-automation-api
     ```
-
-2.  **Create an environment file:**
-    Create a `.env` file in the root of the project and add the following variables:
-    ```env
-    PORT=3000
-    NODE_ENV=development
-    ```
-
-3.  **Install dependencies:**
-    It is recommended to run the application using Docker, which handles dependencies automatically. However, if you need to install dependencies locally:
+2.  **Install dependencies:**
     ```bash
     npm install
     ```
+3.  **Configure environment variables:**
+    Create a `.env` file in the project root with the following content:
+    ```ini
+    PORT=3000
+    NODE_ENV=development
+    MONGO_URI=mongodb://mongodb:27017/smart-home-db
+    JWT_SECRET= # Your JWT secret key
+    REFRESH_SECRET= # Your JWT refresh secret key
+    ACCESS_TOKEN_EXPIRY=1h
+    REFRESH_TOKEN_EXPIRY=7d
+    LOG_LEVEL=debug
+    ```
+    (Note: `JWT_SECRET` and `REFRESH_SECRET` should be long, random strings for production.)
 
-## Running the Application
+### Running the Project
 
-### Development Mode
+The project is configured to run using Docker Compose, which will spin up both the Node.js API and a MongoDB instance.
 
-For development, we use Docker Compose to run the application in a container with live-reloading enabled.
+1.  **Build and run the containers:**
+    ```bash
+    docker-compose up --build
+    ```
+    This command will build the Docker images and start the services. The API will be available at `http://localhost:3000`.
 
-```bash
-docker-compose up --build
-```
+## 📚 Project Evolution: A Day-by-Day Journey
 
-The API will be available at `http://localhost:3000`. Any changes to the source code will automatically restart the server.
+### Day 1: Project Initialization & Enterprise Setup
+- **Objective:** Set up a production-grade Node.js project with TypeScript, modular structure, essential security middleware, health checks, and Dockerization.
+- **Key Activities:** Initialized Node.js project, configured TypeScript, established modular folder structure, implemented environment variable handling, developed health check, set up Express with security middleware and global error handling, implemented server entry point with graceful shutdown, added basic logger, configured Jest for testing, and created initial Docker setup.
+- **Outcome:** A fully functional, containerized Node.js application with a solid foundation.
 
-To run in development mode without Docker:
-```bash
-npm run dev
-```
+### Day 2: Data Layer Excellence: MongoDB, Mongoose, User & Household Models, and Secure Authentication
+- **Objective:** Integrate MongoDB and Mongoose, define data models for Users and Households, and implement secure password hashing.
+- **Key Activities:** Updated `docker-compose.yml` with MongoDB service, configured environment variables for MongoDB and JWT, installed Mongoose and bcryptjs, set up database connection logic, integrated database connection into application startup, created Mongoose models for `Household` and `User` (with password hashing), implemented user registration and login logic in services and controllers, and defined custom error middleware.
+- **Outcome:** Persistent storage for smart home data, secure user authentication, and basic multi-tenancy.
 
-### Production Mode
+### Day 3: Challenges Faced and Solutions Implemented
+- **Objective:** Address critical issues encountered during development, including MongoDB replica set initialization, inconsistent API error responses, and TypeScript compilation problems.
+- **Key Activities:** Implemented robust `docker-compose.yml` configurations with `healthcheck` and `depends_on` to ensure MongoDB readiness, rewrote `init-mongo.sh` for reliable replica set initiation, introduced a `CustomError` class for consistent JSON error responses, corrected global error handling middleware signature, and resolved TypeScript import and type recognition issues.
+- **Outcome:** Enhanced stability, improved error handling, and a more reliable development environment.
 
-To run the application in production mode (using the compiled JavaScript from the `dist` directory):
+### Day 4: Security Infrastructure: JWT Authentication with Refresh Token Rotation and Authorization Middleware
+- **Objective:** Implement JWT-based authentication with refresh token rotation and robust authentication/authorization middleware.
+- **Key Activities:** Integrated `jsonwebtoken` and `cookie-parser`, configured JWT secrets and expiry times, created `RefreshToken` Mongoose model for database storage, developed `auth.service.ts` for token generation, verification, and rotation, implemented `authenticate` and `authorize` middleware for RBAC, and added new user endpoints for token refresh and logout.
+- **Outcome:** Secure, stateless authentication with enhanced user experience and protection of API endpoints.
 
-```bash
-npm run build
-npm start
-```
+### Day 5: Scalable Service Design: Smart Home Device Management and Multi-Tenancy
+- **Objective:** Implement a complete Smart Home Device Management system with multi-tenancy, ensuring users only manage devices within their households.
+- **Key Activities:** Designed `Device` model with flexible schema, created `deviceService` for CRUD operations with multi-tenancy checks, updated `Household` model to reference devices, implemented device input validation, and exposed device management functionality via new controllers and routes protected by authentication and authorization middleware.
+- **Outcome:** Full CRUD capabilities for smart home devices with strict multi-tenancy enforcement.
 
-## Running Tests
+### Day 6: Household and User Management
+- **Objective:** Build a comprehensive household and user management system, including an invitation system.
+- **Key Activities:** Created `household` service, controller, and routes for household CRUD operations, introduced `Invitation` model for pending invitations, implemented invitation system (invite, accept, decline), enforced RBAC for household administration (owner-only actions), and added cascading deletion logic for data integrity.
+- **Outcome:** A collaborative, multi-user application foundation with secure invitation and household management features.
 
-To run the test suite:
+## 🧪 Testing
+
+### Running Tests
+
+To run the unit and integration tests, use the following command:
 
 ```bash
 npm test
 ```
 
-To run tests in watch mode:
+## 🤝 Contribution & Collaboration
 
-```bash
-npm test:watch
-```
-
-To get a coverage report:
-```bash
-npm test -- --coverage
-```
-
-## Project Structure
-
-### API Documentation
-
-API documentation will be generated using Swagger and will be available at the `/api-docs` endpoint in the future. For now, the available endpoints can be found in the `src/routes` directory.
-
-The health check endpoint is available at:
-- `GET /health`
-
-## Architecture
-
-This project is built with a focus on scalability, maintainability, and security. Key architectural decisions include:
-
-- **TypeScript:** For type safety and improved developer experience.
-- **Modular Structure:** Separation of concerns into layers (controllers, services, models).
-- **Express.js:** A flexible and minimalist web framework.
-- **Docker Containerization:** For consistent environments and easy deployment.
-- **Jest & Supertest:** For unit and integration testing.
-- **Security:** Using `helmet`, `cors`, and `express-rate-limit` for baseline security.
-- **Graceful Shutdown:** To ensure the server shuts down cleanly.
-
-## Deployment
-
-The application is designed to be deployed using Docker. The `Dockerfile` creates a production-ready image. This image can be deployed to any container orchestration platform like Kubernetes or a cloud service like AWS ECS or Google Cloud Run.
-
-## Contributing
-
-Contributions are welcome! Please follow the standard Git workflow:
+We welcome contributions! Please follow these steps to contribute:
 
 1.  Fork the repository.
-2.  Create a new feature branch (`git checkout -b feature/your-feature`).
-3.  Commit your changes (`git commit -m '''feat: Add some feature'''`).
+2.  Create a new branch (`git checkout -b feature/your-feature`).
+3.  Commit your changes (`git commit -m 'feat: Add new feature'`).
 4.  Push to the branch (`git push origin feature/your-feature`).
-5.  Open a pull request.
+5.  Open a Pull Request.
+
+-----
+
+*Built with ❤️ by a senior engineer.*
