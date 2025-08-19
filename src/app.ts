@@ -7,7 +7,9 @@ import cookieParser from "cookie-parser";
 import healthRoutes from "./routes/health.routes";
 import userRoutes from "./routes/user.routes";
 import deviceRoutes from "./routes/device.routes";
-import householdRoutes from "./routes/household.routes"; // NEW: Import household routes
+import householdRoutes from "./routes/household.routes";
+import swaggerUi from 'swagger-ui-express'; // NEW
+import swaggerSpec from './config/swagger'; // NEW
 import { env } from "./config/env";
 import logger from "./utils/logger";
 import { CustomError } from "./middleware/error.middleware";
@@ -37,6 +39,9 @@ app.use(apiLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// --- Documentation Route (NEW) ---
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // --- Routes ---
 app.use("/", healthRoutes);

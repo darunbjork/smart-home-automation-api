@@ -5,6 +5,7 @@ import path from "path";
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 interface EnvConfig {
+  LOG_LEVEL: string;
   PORT: number;
   NODE_ENV: string;
   MONGO_URI: string;
@@ -36,6 +37,7 @@ export const env: EnvConfig = {
   JWT_REFRESH_SECRET: getEnv("JWT_REFRESH_SECRET"),
   ACCESS_TOKEN_EXPIRES_IN: getEnv("ACCESS_TOKEN_EXPIRES_IN"),
   REFRESH_TOKEN_EXPIRES_IN: getEnv("REFRESH_TOKEN_EXPIRES_IN"),
+  LOG_LEVEL: "",
 };
 
 if (env.NODE_ENV === "development") {

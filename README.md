@@ -97,6 +97,14 @@ To run the unit and integration tests, use the following command:
 npm test
 ```
 
+### API Documentation
+
+The API documentation is automatically generated using Swagger and is available at:
+
+`http://localhost:3000/api-docs`
+
+This interactive UI allows you to explore all endpoints, test them directly, and understand the API's structure.
+
 ## 🤝 Contribution & Collaboration
 
 We welcome contributions! Please follow these steps to contribute:

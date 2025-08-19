@@ -15,8 +15,11 @@ services:
       - PORT=${PORT}
       - NODE_ENV=${NODE_ENV}
       - MONGO_URI=mongodb://mongodb:27017/smarthome?replicaSet=rs0 # Add MongoDB URI
-    env_file:
-      - ./.env
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - ACCESS_TOKEN_EXPIRES_IN=${ACCESS_TOKEN_EXPIRES_IN}
+      - REFRESH_TOKEN_EXPIRES_IN=${REFRESH_TOKEN_EXPIRES_IN}
+      - LOG_LEVEL=${LOG_LEVEL}
 
   mongodb: # New service for MongoDB
     image: mongo:6.0 # Use a specific version for stability
