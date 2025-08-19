@@ -25,7 +25,7 @@ const startServer = async () => {
     logger.info("Received shutdown signal. Closing server...");
     server.close(async (err) => {
       if (err) {
-        logger.error("Error during server shutdown:", err);
+        logger.error({ err }, "Error during server shutdown.");
         process.exit(1);
       }
       // Senior insight: Explicitly close database connections during shutdown.
@@ -33,7 +33,7 @@ const startServer = async () => {
         await mongoose.connection.close(); // Close Mongoose connection
         logger.info("MongoDB connection closed.");
       } catch (dbCloseError) {
-        logger.error("Error closing MongoDB connection:", dbCloseError);
+        logger.error({ err: dbCloseError }, "Error closing MongoDB connection.");
       }
       logger.info("Server closed. Exiting process.");
       process.exit(0);
@@ -47,12 +47,12 @@ const startServer = async () => {
 
   process.on("SIGTERM", gracefulShutdown);
   process.on("SIGINT", gracefulShutdown);
-  process.on("unhandledRejection", (reason, promise) => {
-    logger.error("Unhandled Rejection at:", promise, "reason:", reason);
+  process.on("unhandledRejection", (reason: unknown, promise: Promise<any>) => {
+    logger.error({ promise, reason }, "Unhandled Rejection at:");
     gracefulShutdown();
   });
-  process.on("uncaughtException", (err) => {
-    logger.error("Uncaught Exception:", err);
+  process.on("uncaughtException", (err: Error) => {
+    logger.error({ err }, "Uncaught Exception:");
     gracefulShutdown();
   });
 };

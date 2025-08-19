@@ -49,10 +49,7 @@ export const registerUser = async (
       return user;
     } catch (error) {
       await session.abortTransaction();
-      logger.error(
-        "Failed to register user and create household due to transaction error:",
-        error,
-      );
+      logger.error({ error }, "Failed to register user and create household due to transaction error.");
       throw error;
     } finally {
       session.endSession();

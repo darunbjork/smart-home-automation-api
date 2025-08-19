@@ -104,7 +104,7 @@ export const registerUser = async (
       user: prepareUserResponse(user),
     });
   } catch (error) {
-    logger.error("Error registering user:", error);
+    logger.error({ error }, "Error registering user.");
     next(error);
   }
 };
@@ -131,7 +131,7 @@ export const loginUser = async (
       accessToken,
     });
   } catch (error) {
-    logger.error("Error logging in user:", error);
+    logger.error({ error }, "Error logging in user.");
     next(error);
   }
 };
@@ -167,7 +167,7 @@ export const refreshAccessToken = async (
       user: { userId, role },
     });
   } catch (error) {
-    logger.error("Error refreshing access token:", error);
+    logger.error({ error }, "Error refreshing access token.");
     next(error);
   }
 };
@@ -199,7 +199,7 @@ export const logoutUser = async (
 
     res.status(204).send(); // 204 No Content for successful logout
   } catch (error) {
-    logger.error("Error logging out user:", error);
+    logger.error({ error }, "Error logging out user.");
     next(error);
   }
 };
@@ -218,7 +218,7 @@ export const getAllUsers = async (
     const users = await userService.getAllUsers();
     res.status(200).json({ users: users.map(prepareUserResponse) });
   } catch (error) {
-    logger.error("Error fetching all users:", error);
+    logger.error({ error }, "Error fetching all users.");
     next(error);
   }
 };
@@ -245,7 +245,7 @@ export const getUserById = async (
 
     res.status(200).json({ user: prepareUserResponse(user) });
   } catch (error) {
-    logger.error(`Error fetching user with ID ${req.params.id}:`, error);
+    logger.error({ error }, `Error fetching user with ID ${req.params.id}.`);
     next(error);
   }
 };
@@ -275,7 +275,7 @@ export const updateUser = async (
       user: prepareUserResponse(updatedUser),
     });
   } catch (error) {
-    logger.error(`Error updating user with ID ${req.params.id}:`, error);
+    logger.error({ error }, `Error updating user with ID ${req.params.id}.`);
     next(error);
   }
 };
@@ -309,7 +309,7 @@ export const deleteUser = async (
     await userService.deleteUser(req.params.id);
     res.status(200).json({ message: "User soft-deleted successfully." });
   } catch (error) {
-    logger.error(`Error soft-deleting user with ID ${req.params.id}:`, error);
+    logger.error({ error }, `Error soft-deleting user with ID ${req.params.id}.`);
     next(error);
   }
 };

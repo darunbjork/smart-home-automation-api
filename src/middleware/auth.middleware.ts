@@ -34,7 +34,7 @@ export const authenticate = (
     logger.debug(`User ${decoded.userId} authenticated.`);
     next(); // Proceed to the next middleware/route handler
   } catch (error) {
-    logger.warn("Authentication failed:", (error as Error).message);
+    logger.warn({ error }, "Authentication failed.");
     next(error); // Pass error to global error handler
   }
 };

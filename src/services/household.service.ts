@@ -109,10 +109,7 @@ export const deleteHousehold = async (
     );
   } catch (error) {
     await session.abortTransaction();
-    logger.error(
-      `Failed to delete household ${householdId} with cascading:`,
-      error,
-    );
+    logger.error({ error }, `Failed to delete household ${householdId} with cascading.`);
     throw error;
   } finally {
     session.endSession();
@@ -250,10 +247,7 @@ export const acceptInvitation = async (
     return household;
   } catch (error) {
     await session.abortTransaction();
-    logger.error(
-      "Failed to accept invitation due to transaction error:",
-      error,
-    );
+    logger.error({ error }, "Failed to accept invitation due to transaction error.");
     throw error;
   } finally {
     session.endSession();
@@ -327,10 +321,7 @@ export const leaveHousehold = async (
     logger.info(`User ${userId} successfully left household ${household._id}.`);
   } catch (error) {
     await session.abortTransaction();
-    logger.error(
-      `Failed to leave household ${householdId} due to transaction error:`,
-      error,
-    );
+    logger.error({ error }, `Failed to leave household ${householdId} due to transaction error.`);
     throw error;
   } finally {
     session.endSession();

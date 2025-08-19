@@ -47,7 +47,7 @@ const connectDB = async () => {
       process.exit(0);
     });
   } catch (error) {
-    logger.error("MongoDB Connection Failed:", error);
+    logger.error({ error }, "MongoDB Connection Failed.");
     // Senior insight: Ensure application cannot run without a database connection.
     process.exit(1); // Exit the process with failure code
   }

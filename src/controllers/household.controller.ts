@@ -38,7 +38,7 @@ export const getHouseholds = async (
       .status(200)
       .json({ households: households.map(prepareHouseholdResponse) });
   } catch (error) {
-    logger.error("Error fetching households:", error);
+    logger.error({ error }, "Error fetching households.");
     next(error);
   }
 };
@@ -60,7 +60,7 @@ export const getHouseholdById = async (
     );
     res.status(200).json({ household: prepareHouseholdResponse(household) });
   } catch (error) {
-    logger.error(`Error fetching household ${req.params.id}:`, error);
+    logger.error({ error }, `Error fetching household ${req.params.id}.`);
     next(error);
   }
 };
@@ -81,7 +81,7 @@ export const deleteHousehold = async (
       message: "Household and all associated data deleted successfully.",
     });
   } catch (error) {
-    logger.error(`Error deleting household ${req.params.id}:`, error);
+    logger.error({ error }, `Error deleting household ${req.params.id}.`);
     next(error);
   }
 };
@@ -107,10 +107,7 @@ export const inviteUser = async (
       .status(201)
       .json({ message: `Invitation sent to ${inviteeEmail}.`, invitation });
   } catch (error) {
-    logger.error(
-      `Error inviting user to household ${req.body.householdId}:`,
-      error,
-    );
+    logger.error({ error }, `Error inviting user to household ${req.body.householdId}.`);
     next(error);
   }
 };
@@ -129,7 +126,7 @@ export const getInvitations = async (
     const invitations = await householdService.getInvitationsForUser(userId);
     res.status(200).json({ invitations });
   } catch (error) {
-    logger.error("Error fetching invitations:", error);
+    logger.error({ error }, "Error fetching invitations.");
     next(error);
   }
 };
@@ -152,10 +149,7 @@ export const acceptInvitation = async (
       household: prepareHouseholdResponse(household),
     });
   } catch (error) {
-    logger.error(
-      `Error accepting invitation with token ${req.body.token}:`,
-      error,
-    );
+    logger.error({ error }, `Error accepting invitation with token ${req.body.token}.`);
     next(error);
   }
 };
@@ -175,10 +169,7 @@ export const declineInvitation = async (
     await householdService.declineInvitation(token, userId);
     res.status(200).json({ message: "Invitation declined successfully." });
   } catch (error) {
-    logger.error(
-      `Error declining invitation with token ${req.body.token}:`,
-      error,
-    );
+    logger.error({ error }, `Error declining invitation with token ${req.body.token}.`);
     next(error);
   }
 };
@@ -198,7 +189,7 @@ export const leaveHousehold = async (
     await householdService.leaveHousehold(householdId, userId);
     res.status(200).json({ message: "Successfully left the household." });
   } catch (error) {
-    logger.error(`Error leaving household ${req.body.householdId}:`, error);
+    logger.error({ error }, `Error leaving household ${req.body.householdId}.`);
     next(error);
   }
 };

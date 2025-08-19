@@ -150,7 +150,7 @@ export const verifyAndRotateRefreshToken = async (
     };
   } catch (err: unknown) {
     // Changed any to unknown
-    logger.error("Error verifying or rotating refresh token:", err);
+    logger.error({ err }, "Error verifying or rotating refresh token.");
     if (err instanceof Error && err.name === "TokenExpiredError") {
       throw new CustomError("Refresh token expired", 401);
     }
@@ -166,10 +166,7 @@ export const invalidateRefreshToken = async (
   // This effectively logs out the user.
   const result = await RefreshToken.deleteOne({ token: refreshToken });
   if (result.deletedCount === 0) {
-    logger.warn(
-      "Attempted to invalidate a refresh token that was not found:",
-      refreshToken,
-    );
+    logger.warn({ refreshToken }, "Attempted to invalidate a refresh token that was not found.");
     // Even if not found, we still return success to the client for security reasons
     // (don't reveal if a token exists or not).
   }

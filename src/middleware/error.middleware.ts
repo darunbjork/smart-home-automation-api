@@ -31,7 +31,7 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction,
 ) => {
-  logger.error("Unhandled API Error:", err);
+  logger.error({ err: err as Error }, "Unhandled API Error:");
 
   let statusCode = 500;
   let message = "An unexpected error occurred.";

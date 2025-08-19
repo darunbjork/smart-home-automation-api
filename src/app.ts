@@ -8,8 +8,8 @@ import healthRoutes from "./routes/health.routes";
 import userRoutes from "./routes/user.routes";
 import deviceRoutes from "./routes/device.routes";
 import householdRoutes from "./routes/household.routes";
-import swaggerUi from 'swagger-ui-express'; // NEW
-import swaggerSpec from './config/swagger'; // NEW
+import swaggerUi from "swagger-ui-express"; // NEW
+import swaggerSpec from "./config/swagger"; // NEW
 import { env } from "./config/env";
 import logger from "./utils/logger";
 import { CustomError } from "./middleware/error.middleware";
@@ -41,7 +41,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // --- Documentation Route (NEW) ---
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // --- Routes ---
 app.use("/", healthRoutes);
@@ -117,8 +117,8 @@ app.use("/households", householdRoutes); // NEW: Add household routes
  * ...
  */
 app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
-  logger.error("Error handler middleware caught an error:", err);
-  logger.error("Unhandled API Error:", err);
+  logger.error({ err }, "Error handler middleware caught an error.");
+  logger.error({ err }, "Unhandled API Error.");
 
   const statusCode = err instanceof CustomError ? err.statusCode : 500;
   const message =

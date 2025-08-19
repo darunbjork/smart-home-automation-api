@@ -37,7 +37,7 @@ export const createDevice = async (
       device: prepareDeviceResponse(device),
     });
   } catch (error) {
-    logger.error("Error creating device:", error);
+    logger.error({ error }, "Error creating device.");
     next(error);
   }
 };
@@ -60,10 +60,7 @@ export const getDevicesByHousehold = async (
     );
     res.status(200).json({ devices: devices.map(prepareDeviceResponse) });
   } catch (error) {
-    logger.error(
-      `Error fetching devices for household ${req.params.householdId}:`,
-      error,
-    );
+    logger.error({ error }, `Error fetching devices for household ${req.params.householdId}.`);
     next(error);
   }
 };
@@ -83,7 +80,7 @@ export const getDeviceById = async (
     const device = await deviceService.getDeviceById(id, userId);
     res.status(200).json({ device: prepareDeviceResponse(device) });
   } catch (error) {
-    logger.error(`Error fetching device with ID ${req.params.id}:`, error);
+    logger.error({ error }, `Error fetching device with ID ${req.params.id}.`);
     next(error);
   }
 };
@@ -110,7 +107,7 @@ export const updateDevice = async (
       device: prepareDeviceResponse(updatedDevice),
     });
   } catch (error) {
-    logger.error(`Error updating device with ID ${req.params.id}:`, error);
+    logger.error({ error }, `Error updating device with ID ${req.params.id}.`);
     next(error);
   }
 };
@@ -130,7 +127,7 @@ export const deleteDevice = async (
     await deviceService.deleteDevice(id, userId);
     res.status(200).json({ message: "Device deleted successfully." });
   } catch (error) {
-    logger.error(`Error deleting device with ID ${req.params.id}:`, error);
+    logger.error({ error }, `Error deleting device with ID ${req.params.id}.`);
     next(error);
   }
 };
