@@ -1,20 +1,19 @@
 // smart-home-automation-api/src/server.ts
 import app from "./app";
-import http from "http"; // NEW: Import the http module
-import { Server as SocketIoServer } from "socket.io"; // NEW: Import Server class
+import http from "http";
+import { Server as SocketIoServer } from "socket.io";
 import { env } from "./config/env";
 import logger from "./utils/logger";
 import connectDB from "./config/db";
-import { initializeSocketIo } from "./realtime/socket"; // NEW: We'll create this file
+import { initializeSocketIo } from "./realtime/socket";
+import { initializeMqttBroker } from './services/mqtt.service'; // NEW: Import MQTT broker init
 
 const PORT = env.PORT;
 
-const server = http.createServer(app); // NEW: Create an HTTP server from the Express app
+const server = http.createServer(app);
 
-// Connect to MongoDB
 connectDB();
 
-// Initialize socket.io with the HTTP server
 const io = new SocketIoServer(server, {
   cors: {
     origin:
@@ -26,12 +25,10 @@ const io = new SocketIoServer(server, {
   },
 });
 
-// Pass the io instance to our real-time module
 initializeSocketIo(io);
+initializeMqttBroker(); // NEW: Start the MQTT broker
 
-// Start the server
 server.listen(PORT, () => {
-  // Listen on the HTTP server, not the Express app
   logger.info(`Server is running on port ${PORT}`);
 });
 

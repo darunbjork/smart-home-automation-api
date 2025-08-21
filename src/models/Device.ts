@@ -6,10 +6,10 @@ export interface IDevice extends Document {
   _id: Types.ObjectId;
   name: string;
   type: string; // e.g., 'light', 'thermostat', 'sensor'
-  status: "online" | "offline" | "unknown";
+  status: "online" | "offline" | "unknown" | "pending";
   household: Types.ObjectId; // A reference to the household it belongs to
   owner: Types.ObjectId; // A reference to the user who initially created it
-  data: Schema.Types.Mixed; // Flexible field to store device-specific data
+  data: Record<string, unknown>; // Flexible field to store device-specific data
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,7 +29,7 @@ const DeviceSchema = new Schema<IDevice>(
     },
     status: {
       type: String,
-      enum: ["online", "offline", "unknown"],
+      enum: ["online", "offline", "unknown", "pending"],
       default: "unknown",
     },
     household: {

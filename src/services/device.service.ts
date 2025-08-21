@@ -5,7 +5,8 @@ import { IDevice } from "../models/Device";
 import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
 import { Types } from "mongoose";
-import { emitToHousehold } from "../realtime/socket"; // NEW: Import the emit function
+import { emitToHousehold } from "../realtime/socket";
+import { publishCommand } from "./mqtt.service";
 
 // Helper function to check if a user is a member of a household
 const isUserInHousehold = async (
@@ -117,7 +118,6 @@ export const updateDevice = async (
     throw new CustomError("Device not found.", 404);
   }
 
-  // Senior Insight: Multi-tenancy check before update.
   const userObjectId = new Types.ObjectId(userId);
   const isAuthorized = await isUserInHousehold(userObjectId, device.household);
   if (!isAuthorized) {
@@ -127,7 +127,39 @@ export const updateDevice = async (
     );
   }
 
-  // Senior Insight: Restrict fields that can be updated.
+  // Determine the changes to send as a command.
+  // We only want to send the 'data' field.
+  const commandPayload = updateData.data;
+
+  // Senior Insight: Send the command FIRST to the device via MQTT.
+  // We should not update the database with the new state until the device
+  // confirms the change by publishing a status update.
+  if (commandPayload) {
+    publishCommand(device.household, device._id, commandPayload);
+
+    // For this example, we will immediately update the database to show a "pending" state.
+    // In a real-world scenario, you would wait for the MQTT status message from the device
+    // before making a permanent change to the database.
+    const updatedDevice = await Device.findOneAndUpdate(
+      { _id: deviceId },
+      { $set: { data: commandPayload, status: "pending" } }, // A 'pending' status is good practice
+      { new: true, runValidators: true },
+    );
+    if (!updatedDevice) {
+      throw new CustomError("Failed to update device.", 500);
+    }
+    logger.info(
+      `Device '${updatedDevice.name}' command sent via MQTT by user ${userId}.`,
+    );
+
+    // We emit the 'pending' status via WebSocket so the frontend knows the command was sent.
+    emitToHousehold("device:update", updatedDevice.household, updatedDevice);
+
+    // Return the updated device with the pending status
+    return updatedDevice;
+  }
+
+  // If there's no data to update, handle it normally.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { household, owner, ...safeUpdateData } = updateData;
   const updatedDevice = await Device.findOneAndUpdate(
@@ -141,10 +173,7 @@ export const updateDevice = async (
   }
 
   logger.info(`Device '${updatedDevice.name}' updated by user ${userId}.`);
-
-  // NEW: Emit a real-time event to all household members
   emitToHousehold("device:update", updatedDevice.household, updatedDevice);
-
   return updatedDevice;
 };
 
