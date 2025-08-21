@@ -166,7 +166,10 @@ export const invalidateRefreshToken = async (
   // This effectively logs out the user.
   const result = await RefreshToken.deleteOne({ token: refreshToken });
   if (result.deletedCount === 0) {
-    logger.warn({ refreshToken }, "Attempted to invalidate a refresh token that was not found.");
+    logger.warn(
+      { refreshToken },
+      "Attempted to invalidate a refresh token that was not found.",
+    );
     // Even if not found, we still return success to the client for security reasons
     // (don't reveal if a token exists or not).
   }

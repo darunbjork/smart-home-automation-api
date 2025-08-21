@@ -1,60 +1,43 @@
 // smart-home-automation-api/src/server.ts
 import app from "./app";
+import http from "http"; // NEW: Import the http module
+import { Server as SocketIoServer } from "socket.io"; // NEW: Import Server class
 import { env } from "./config/env";
-import connectDB from "./config/db"; // Import our database connection function
 import logger from "./utils/logger";
-import mongoose from "mongoose";
+import connectDB from "./config/db";
+import { initializeSocketIo } from "./realtime/socket"; // NEW: We'll create this file
 
 const PORT = env.PORT;
 
-const startServer = async () => {
-  // Connect to the database before starting the server.
-  // Senior insight: Ensure all critical dependencies (like DB) are ready before serving requests.
-  await connectDB();
+const server = http.createServer(app); // NEW: Create an HTTP server from the Express app
 
-  const server = app.listen(PORT, () => {
-    logger.info(
-      `Server running on port ${PORT} in ${env.NODE_ENV} environment.`,
-    );
-    logger.info(`Access health check at http://localhost:${PORT}/health`);
+// Connect to MongoDB
+connectDB();
+
+// Initialize socket.io with the HTTP server
+const io = new SocketIoServer(server, {
+  cors: {
+    origin:
+      env.NODE_ENV === "development"
+        ? ["http://localhost:3000", "http://127.0.0.1:5500"]
+        : "YOUR_FRONTEND_DOMAIN",
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+// Pass the io instance to our real-time module
+initializeSocketIo(io);
+
+// Start the server
+server.listen(PORT, () => {
+  // Listen on the HTTP server, not the Express app
+  logger.info(`Server is running on port ${PORT}`);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  logger.error({ promise, reason }, "Unhandled Rejection at:");
+  server.close(() => {
+    process.exit(1);
   });
-
-  // --- Graceful Shutdown Handling (Pillar 8: Configuration & Deployment) ---
-  const gracefulShutdown = async () => {
-    // Made async to await DB close
-    logger.info("Received shutdown signal. Closing server...");
-    server.close(async (err) => {
-      if (err) {
-        logger.error({ err }, "Error during server shutdown.");
-        process.exit(1);
-      }
-      // Senior insight: Explicitly close database connections during shutdown.
-      try {
-        await mongoose.connection.close(); // Close Mongoose connection
-        logger.info("MongoDB connection closed.");
-      } catch (dbCloseError) {
-        logger.error({ err: dbCloseError }, "Error closing MongoDB connection.");
-      }
-      logger.info("Server closed. Exiting process.");
-      process.exit(0);
-    });
-
-    setTimeout(() => {
-      logger.error("Forcefully shutting down server due to timeout.");
-      process.exit(1);
-    }, 10000);
-  };
-
-  process.on("SIGTERM", gracefulShutdown);
-  process.on("SIGINT", gracefulShutdown);
-  process.on("unhandledRejection", (reason: unknown, promise: Promise<any>) => {
-    logger.error({ promise, reason }, "Unhandled Rejection at:");
-    gracefulShutdown();
-  });
-  process.on("uncaughtException", (err: Error) => {
-    logger.error({ err }, "Uncaught Exception:");
-    gracefulShutdown();
-  });
-};
-
-startServer(); // Call the async function to start the server
+});

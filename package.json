@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/server.js",
   "scripts": {
-    "test": "jest --detectOpenHandles --forceExit",
+    "test": "jest --detectOpenHandles --forceExit --runInBand",
     "test:watch": "jest --watch --detectOpenHandles",
     "test:coverage": "jest --coverage --detectOpenHandles --forceExit",
     "test:debug": "DEBUG_TESTS=true jest --detectOpenHandles --forceExit --verbose",
@@ -34,6 +34,7 @@
     "mongoose": "^8.17.1",
     "pino": "^9.9.0",
     "pino-pretty": "^13.1.1",
+    "socket.io": "^4.8.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },
@@ -47,6 +48,7 @@
     "@types/mongodb-memory-server": "^1.8.0",
     "@types/mongoose": "^5.11.96",
     "@types/node": "^20.14.9",
+    "@types/socket.io": "^3.0.1",
     "@types/supertest": "^6.0.3",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",

@@ -107,7 +107,10 @@ export const inviteUser = async (
       .status(201)
       .json({ message: `Invitation sent to ${inviteeEmail}.`, invitation });
   } catch (error) {
-    logger.error({ error }, `Error inviting user to household ${req.body.householdId}.`);
+    logger.error(
+      { error },
+      `Error inviting user to household ${req.body.householdId}.`,
+    );
     next(error);
   }
 };
@@ -149,7 +152,10 @@ export const acceptInvitation = async (
       household: prepareHouseholdResponse(household),
     });
   } catch (error) {
-    logger.error({ error }, `Error accepting invitation with token ${req.body.token}.`);
+    logger.error(
+      { error },
+      `Error accepting invitation with token ${req.body.token}.`,
+    );
     next(error);
   }
 };
@@ -169,7 +175,10 @@ export const declineInvitation = async (
     await householdService.declineInvitation(token, userId);
     res.status(200).json({ message: "Invitation declined successfully." });
   } catch (error) {
-    logger.error({ error }, `Error declining invitation with token ${req.body.token}.`);
+    logger.error(
+      { error },
+      `Error declining invitation with token ${req.body.token}.`,
+    );
     next(error);
   }
 };

@@ -5,6 +5,7 @@ import { IDevice } from "../models/Device";
 import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
 import { Types } from "mongoose";
+import { emitToHousehold } from "../realtime/socket"; // NEW: Import the emit function
 
 // Helper function to check if a user is a member of a household
 const isUserInHousehold = async (
@@ -53,6 +54,10 @@ export const createDevice = async (
   logger.info(
     `New device '${device.name}' (${device.type}) created in household ${householdId}.`,
   );
+
+  // NEW: Emit a real-time event to all household members
+  emitToHousehold("device:new", device.household, device);
+
   return device;
 };
 
@@ -136,6 +141,10 @@ export const updateDevice = async (
   }
 
   logger.info(`Device '${updatedDevice.name}' updated by user ${userId}.`);
+
+  // NEW: Emit a real-time event to all household members
+  emitToHousehold("device:update", updatedDevice.household, updatedDevice);
+
   return updatedDevice;
 };
 

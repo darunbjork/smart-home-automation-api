@@ -97,8 +97,13 @@ export const registerUser = async (
 ) => {
   logger.info("Register user request received");
   try {
-    const { username, email, password } = req.body;
-    const user = await userService.registerUser(username, email, password);
+    const { username, email, password, householdName } = req.body;
+    const user = await userService.registerUser(
+      username,
+      email,
+      password,
+      householdName,
+    );
     res.status(201).json({
       message: "User registered successfully and household created.",
       user: prepareUserResponse(user),
@@ -309,7 +314,10 @@ export const deleteUser = async (
     await userService.deleteUser(req.params.id);
     res.status(200).json({ message: "User soft-deleted successfully." });
   } catch (error) {
-    logger.error({ error }, `Error soft-deleting user with ID ${req.params.id}.`);
+    logger.error(
+      { error },
+      `Error soft-deleting user with ID ${req.params.id}.`,
+    );
     next(error);
   }
 };

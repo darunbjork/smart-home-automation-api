@@ -33,17 +33,24 @@ export const validateRequest = (
 // Validation rules for user registration
 export const validateRegisterUser = [
   body("username")
+    .notEmpty()
+    .withMessage("Username is required")
     .isLength({ min: 3, max: 30 })
     .withMessage("Username must be between 3 and 30 characters")
     .matches(/^[a-zA-Z0-9_]+$/)
     .withMessage("Username can only contain letters, numbers, and underscores"),
   body("email")
+    .notEmpty()
+    .withMessage("Valid email is required")
     .isEmail()
     .withMessage("Please provide a valid email address")
     .normalizeEmail(),
   body("password")
+    .notEmpty()
+    .withMessage("Password cannot be empty")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters long"),
+  body("householdName").notEmpty().withMessage("Household name is required"),
   validateRequest, // Apply our custom validation checker
 ];
 

@@ -11,6 +11,7 @@ export const registerUser = async (
   username: string,
   email: string,
   password: string,
+  householdName: string, // Added householdName
 ): Promise<IUser> => {
   try {
     // Check if the user already exists
@@ -32,7 +33,7 @@ export const registerUser = async (
       await user.save({ session });
 
       const household = new Household({
-        name: `${username}'s Home`, // Give the first household a default name
+        name: householdName, // Use provided name instead of generating
         owner: user._id,
         members: [user._id], // Add the user as the first member
       });
@@ -49,13 +50,28 @@ export const registerUser = async (
       return user;
     } catch (error) {
       await session.abortTransaction();
-      logger.error({ error }, "Failed to register user and create household due to transaction error.");
+      logger.error(
+        { error },
+        "Failed to register user and create household due to transaction error.",
+      );
       throw error;
     } finally {
       session.endSession();
     }
   } catch (error: unknown) {
-    const asError = error as { message: string; statusCode?: number };
+    if (error instanceof CustomError) {
+      // Check if it's already a CustomError
+      throw error; // Re-throw the CustomError directly
+    }
+    const asError = error as {
+      code?: number;
+      message: string;
+      statusCode?: number;
+    };
+    if (asError.code === 11000) {
+      // MongoDB duplicate key error
+      throw new CustomError("Username or email already exists.", 409);
+    }
     throw new CustomError(
       `Registration failed: ${asError.message}`,
       asError.statusCode || 500,
@@ -91,12 +107,9 @@ export const loginUser = async (
 
     logger.info(`User ${user.username} logged in successfully.`);
     return { user, accessToken, refreshToken }; // Return tokens
-  } catch (error: unknown) {
-    const asError = error as { message: string; statusCode?: number };
-    throw new CustomError(
-      `Login failed: ${asError.message}`,
-      asError.statusCode || 500,
-    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    throw new CustomError(error.message, error.statusCode || 500);
   }
 };
 

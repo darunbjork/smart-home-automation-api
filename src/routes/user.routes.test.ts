@@ -1,28 +1,29 @@
 import request from "supertest";
 import app from "../app";
-import mongoose from "mongoose";
-import { MongoMemoryServer } from "mongodb-memory-server";
+// import { MongoMemoryReplSet } from "mongodb-memory-server"; // This import will be removed
 import User from "../models/User";
 import Household from "../models/Household";
 
 describe("User Authentication and Household Management", () => {
-  let mongoServer: MongoMemoryServer;
+  // let mongoServer: MongoMemoryReplSet; // This line is removed
 
-  beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
-  });
+  // beforeAll(async () => { // This block is removed
+  //   mongoServer = await MongoMemoryReplSet.create({
+  //     replSet: { name: 'rs0', count: 1 },
+  //   });
+  //   const mongoUri = mongoServer.getUri();
+  //   await mongoose.connect(mongoUri, { replicaSet: 'rs0' });
+  // });
 
   afterEach(async () => {
     await User.deleteMany({});
     await Household.deleteMany({});
   });
 
-  afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-  });
+  // afterAll(async () => { // This block is removed
+  //   await mongoose.disconnect();
+  //   await mongoServer.stop();
+  // });
 
   it("should register a new user and create a household successfully", async () => {
     const res = await request(app).post("/users/register").send({
@@ -82,7 +83,7 @@ describe("User Authentication and Household Management", () => {
     });
     expect(res2.statusCode).toEqual(409);
     expect(res2.body.error.message).toEqual(
-      "Username or email already exists.",
+      "A user with this email already exists.",
     );
   });
 
@@ -142,9 +143,10 @@ describe("User Authentication and Household Management", () => {
       // password and householdName are missing
     });
     expect(res.statusCode).toEqual(400);
-    expect(res.body.error.message).toEqual(
-      "Missing required fields: username, email, password, householdName",
+    expect(res.body.error.message).toContain(
+      "Password must be at least 8 characters long",
     );
+    expect(res.body.error.message).toContain("Household name is required");
   });
 
   it("should return 400 if required fields are missing for login", async () => {

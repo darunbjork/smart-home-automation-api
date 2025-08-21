@@ -60,7 +60,10 @@ export const getDevicesByHousehold = async (
     );
     res.status(200).json({ devices: devices.map(prepareDeviceResponse) });
   } catch (error) {
-    logger.error({ error }, `Error fetching devices for household ${req.params.householdId}.`);
+    logger.error(
+      { error },
+      `Error fetching devices for household ${req.params.householdId}.`,
+    );
     next(error);
   }
 };
