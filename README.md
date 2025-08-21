@@ -11,7 +11,8 @@ This is the backend API for a smart home automation system. It is built using No
 - **Device Management:** A flexible API for creating, updating, and controlling smart home devices.
 - **Household Management:** An invitation-based system for adding and managing household members.
 - **Data Integrity:** Cascading deletions and atomic transactions to prevent orphaned data.
-- **Scalable Architecture:** A service-oriented design that separates concerns and is easy to maintain.
+- **Real-Time Communication (WebSockets):** Instantaneous updates of device statuses and other events to connected clients.
+- **IoT Integration (MQTT):** Seamless communication with physical smart home devices for sending commands and receiving status updates.
 
 ## 🚀 Getting Started
 
@@ -36,24 +37,25 @@ This is the backend API for a smart home automation system. It is built using No
     ```ini
     PORT=3000
     NODE_ENV=development
-    MONGO_URI=mongodb://mongodb:27017/smart-home-db
+    MONGO_URI=mongodb://mongodb:27017/smarthome?replicaSet=rs0
     JWT_SECRET= # Your JWT secret key
-    REFRESH_SECRET= # Your JWT refresh secret key
-    ACCESS_TOKEN_EXPIRY=1h
-    REFRESH_TOKEN_EXPIRY=7d
+    JWT_REFRESH_SECRET= # Your JWT refresh secret key
+    ACCESS_TOKEN_EXPIRES_IN=1h
+    REFRESH_TOKEN_EXPIRES_IN=7d
     LOG_LEVEL=debug
+    MQTT_BROKER_URL=mqtt://localhost:1883 # Added for MQTT integration
     ```
-    (Note: `JWT_SECRET` and `REFRESH_SECRET` should be long, random strings for production.)
+    (Note: `JWT_SECRET` and `JWT_REFRESH_SECRET` should be long, random strings for production.)
 
 ### Running the Project
 
-The project is configured to run using Docker Compose, which will spin up both the Node.js API and a MongoDB instance.
+The project is configured to run using Docker Compose, which will spin up the Node.js API, an embedded MQTT broker, and a MongoDB instance.
 
 1.  **Build and run the containers:**
     ```bash
     docker-compose up --build
     ```
-    This command will build the Docker images and start the services. The API will be available at `http://localhost:3000`.
+    This command will build the Docker images and start the services. The API will be available at `http://localhost:3000`, and the MQTT broker will be accessible on port `1883`.
 
 ## 📚 Project Evolution: A Day-by-Day Journey
 
@@ -74,7 +76,7 @@ The project is configured to run using Docker Compose, which will spin up both t
 
 ### Day 4: Security Infrastructure: JWT Authentication with Refresh Token Rotation and Authorization Middleware
 - **Objective:** Implement JWT-based authentication with refresh token rotation and robust authentication/authorization middleware.
-- **Key Activities:** Integrated `jsonwebtoken` and `cookie-parser`, configured JWT secrets and expiry times, created `RefreshToken` Mongoose model for database storage, developed `auth.service.ts` for token generation, verification, and rotation, implemented `authenticate` and `authorize` middleware for RBAC, and added new user endpoints for token refresh and logout.
+- **Key Activities:** Integrated `jsonwebtoken` and `cookie-parser`, configured JWT secrets and expiry times, created `RefreshToken` Mongoose model for database storage, developed `auth.service.ts` for token generation, verification, and rotation, implemented `authenticate` and `authorize` middleware for RBAC, and added new user endpoints for token refresh and logout. 
 - **Outcome:** Secure, stateless authentication with enhanced user experience and protection of API endpoints.
 
 ### Day 5: Scalable Service Design: Smart Home Device Management and Multi-Tenancy
@@ -86,6 +88,21 @@ The project is configured to run using Docker Compose, which will spin up both t
 - **Objective:** Build a comprehensive household and user management system, including an invitation system.
 - **Key Activities:** Created `household` service, controller, and routes for household CRUD operations, introduced `Invitation` model for pending invitations, implemented invitation system (invite, accept, decline), enforced RBAC for household administration (owner-only actions), and added cascading deletion logic for data integrity.
 - **Outcome:** A collaborative, multi-user application foundation with secure invitation and household management features.
+
+### Day 7: Professionalism and Automation Features
+- **Objective:** Enhance the API with features crucial for professional development and automation.
+- **Key Activities:** Integrated Swagger UI for interactive API documentation, refined the logging system to output structured JSON for production readiness, set up a basic CI workflow using GitHub Actions for automated builds and tests, and ensured consistent environment variable naming.
+- **Outcome:** Improved API usability, maintainability, and automated quality assurance.
+
+### Day 8: Real-Time Systems: Implementing WebSockets for Device Status
+- **Objective:** Extend the REST API to support real-time communication using WebSockets.
+- **Key Activities:** Integrated `socket.io`, implemented WebSocket authentication, established household-based "rooms", and enabled real-time event emission for device updates.
+- **Outcome:** A responsive and interactive smart home application with instant device status updates.
+
+### Day 9: External Integrations: Connecting to the Real World with MQTT
+- **Objective:** Connect the Node.js API to an MQTT broker to send commands to and receive status updates from physical IoT devices.
+- **Key Activities:** Integrated `aedes` (embedded MQTT broker) and `mqtt` (client library), designed topic structure, implemented command publishing and status update handling, and established a closed-loop system for device control and feedback.
+- **Outcome:** A fully functional IoT backend capable of communicating with real-world devices.
 
 ## 🧪 Testing
 
@@ -104,6 +121,25 @@ The API documentation is automatically generated using Swagger and is available 
 `http://localhost:3000/api-docs`
 
 This interactive UI allows you to explore all endpoints, test them directly, and understand the API's structure.
+
+### MQTT Integration Testing
+
+To test the MQTT integration, you'll need to simulate an IoT device.
+
+1.  **Start the API:** Ensure your Docker containers are running:
+    ```bash
+    docker-compose up --build
+    ```
+2.  **Prepare a Device:** Register a user and create a device via the API (e.g., using Postman). Note down the `householdId` and `deviceId`.
+3.  **Run the Device Simulator:**
+    *   Update `mqtt-device-simulator.js` with your `HOUSEHOLD_ID` and `DEVICE_ID`.
+    *   Run the simulator in a new terminal:
+        ```bash
+        node mqtt-device-simulator.js
+        ```
+4.  **Send a Command:** Update the device's `data` via the API (e.g., `PATCH /devices/:deviceId`).
+    *   **Expected:** The simulator terminal should show it received the command and published a status update.
+5.  **Verify Status Update:** Check your `client.html` browser console. You should see a `device:update` event with the device's status changed to `online`.
 
 ## 🤝 Contribution & Collaboration
 
