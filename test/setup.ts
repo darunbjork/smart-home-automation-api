@@ -1,3 +1,6 @@
+ import dotenv from 'dotenv-flow';
+dotenv.config();
+
  // test/setup.ts
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { connect, connection } from 'mongoose'; // Import mongoose
