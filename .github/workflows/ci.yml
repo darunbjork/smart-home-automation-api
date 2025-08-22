@@ -1,41 +1,65 @@
-# .github/workflows/ci.yml
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
-      - main
-      - develop
+      - main  # Run this workflow on every push to the main branch
   pull_request:
     branches:
-      - main
-      - develop
+      - main  # Also run it on every pull request to main
 
 jobs:
   build_and_test:
-    runs-on: ubuntu-latest
-    env:                          # 👈 make them available to all steps
-      NODE_ENV: test
-      PORT: ${{ vars.PORT }}
-      LOG_LEVEL: ${{ vars.LOG_LEVEL }}
-      MONGO_URI: ${{ vars.MONGO_URI }}
-      ACCESS_TOKEN_EXPIRES_IN: ${{ vars.ACCESS_TOKEN_EXPIRES_IN }}
-      REFRESH_TOKEN_EXPIRES_IN: ${{ vars.REFRESH_TOKEN_EXPIRES_IN }}
-      # Use SECRETS (not vars) for sensitive values:
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+    runs-on: ubuntu-latest  # Use a fresh Ubuntu runner for the job
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      # Step 1: Checkout the code from the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up the Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
-      - name: Install dependencies
+          node-version: '18'  # Use the same Node.js version as our project
+
+      # Step 3: Cache the node_modules to speed up builds
+      - name: Cache Node Modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # Step 4: Install dependencies
+      - name: Install Dependencies
         run: npm ci
-      - name: Build TypeScript
+
+      # Step 5: Build the TypeScript application
+      - name: Build Application
         run: npm run build
-      - name: Run tests
-        run: npm test
+
+      # Step 6: Run tests with coverage
+      # A separate test database for CI is recommended.
+      # You can add environment variables for this.
+      - name: Run Unit & Integration Tests
+        run: npm test -- --coverage
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          
+
+      # Step 7: (Optional, but highly recommended) Build and tag the Docker image
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/smart-home-api:latest

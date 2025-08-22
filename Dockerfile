@@ -1,24 +1,44 @@
-# Stage 1: Builder
-FROM node:20-alpine AS builder
+# Stage 1: The Build Stage
+FROM node:18-slim AS builder
+
+# Set the working directory
 WORKDIR /app
-COPY package*.json ./
+
+# Copy package.json and package-lock.json to leverage Docker cache
+COPY package.json package-lock.json ./
+
+# Install dependencies, including dev dependencies, using npm ci for reproducibility
 RUN npm ci
+
+# Copy the rest of the application source code
 COPY . .
+
+# Build the TypeScript application
 RUN npm run build
 
-# Stage 2: Production (base image for final application)
-FROM node:20-alpine AS production
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY --from=builder /app/dist ./dist
-EXPOSE 3000
-CMD ["npm", "start"]
+# Stage 2: The Production Image
+# Use a lightweight base image for the final production container
+FROM node:18-alpine
 
-# Stage 3: Development (for local development with nodemon)
-FROM node:20-alpine AS development
+# Set the working directory
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-CMD ["npm", "run", "dev"]
+
+# Copy only the package.json and production dependencies from the build stage
+COPY --from=builder /app/package.json ./
+RUN npm install --omit=dev
+
+# Copy the compiled application from the build stage
+COPY --from=builder /app/dist ./dist
+
+# Copy other essential files
+COPY --from=builder /app/.env ./
+COPY --from=builder /app/package.json ./
+
+# Expose the application port
+EXPOSE 3000
+
+# Set the environment to production
+ENV NODE_ENV=production
+
+# The command to run the application
+CMD [ "npm", "run", "start:prod" ]

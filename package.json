@@ -4,16 +4,11 @@
   "description": "",
   "main": "dist/server.js",
   "scripts": {
-    "test": "jest --detectOpenHandles --forceExit --runInBand",
-    "test:watch": "jest --watch --detectOpenHandles",
-    "test:coverage": "jest --coverage --detectOpenHandles --forceExit",
-    "test:debug": "DEBUG_TESTS=true jest --detectOpenHandles --forceExit --verbose",
-    "test:single": "jest --testNamePattern",
+    "start": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix"
+    "start:prod": "node dist/server.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "",
