@@ -16,4 +16,5 @@ module.exports = {
   verbose: true,
   globalSetup: './test/setup.ts',
   globalTeardown: './test/teardown.ts',
+  setupFiles: ['<rootDir>/test/setupEnv.ts'], 
 };

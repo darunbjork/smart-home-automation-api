@@ -14,26 +14,28 @@ on:
 jobs:
   build_and_test:
     runs-on: ubuntu-latest
+    env:                          # 👈 make them available to all steps
+      NODE_ENV: test
+      PORT: ${{ vars.PORT }}
+      LOG_LEVEL: ${{ vars.LOG_LEVEL }}
+      MONGO_URI: ${{ vars.MONGO_URI }}
+      ACCESS_TOKEN_EXPIRES_IN: ${{ vars.ACCESS_TOKEN_EXPIRES_IN }}
+      REFRESH_TOKEN_EXPIRES_IN: ${{ vars.REFRESH_TOKEN_EXPIRES_IN }}
+      # Use SECRETS (not vars) for sensitive values:
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "18"
-
+          node-version: 20
+          cache: npm
       - name: Install dependencies
         run: npm ci
-
       - name: Build TypeScript
         run: npm run build
-
       - name: Run tests
         run: npm test
-        env:
-          JWT_SECRET: ${ secrets.JWT_SECRET }
-          REFRESH_SECRET: ${ secrets.REFRESH_SECRET }
-          # Add other environment variables needed for tests if any
-          MONGO_URI: mongodb://localhost:27017/test-db

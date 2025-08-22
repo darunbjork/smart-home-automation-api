@@ -31,6 +31,18 @@ module.exports = [
       '@typescript-eslint/explicit-module-boundary-types': 'off',
     },
   },
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportDeclaration[source.value=/^(../|./).+.js$/]',
+          message: 'Use extensionless imports for internal TS modules.',
+        },
+      ],
+    },
+  },
   // Prettier configuration
   prettierConfig,
   {
