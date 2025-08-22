@@ -37,13 +37,12 @@ This is the backend API for a smart home automation system. It is built using No
     ```ini
     PORT=3000
     NODE_ENV=development
-    MONGO_URI=mongodb://mongodb:27017/smarthome?replicaSet=rs0
+    MONGO_URI=mongodb://localhost:27017/smart-home-db
     JWT_SECRET= # Your JWT secret key
     JWT_REFRESH_SECRET= # Your JWT refresh secret key
     ACCESS_TOKEN_EXPIRES_IN=1h
     REFRESH_TOKEN_EXPIRES_IN=7d
     LOG_LEVEL=debug
-    MQTT_BROKER_URL=mqtt://localhost:1883 # Added for MQTT integration
     ```
     (Note: `JWT_SECRET` and `JWT_REFRESH_SECRET` should be long, random strings for production.)
 
@@ -56,6 +55,21 @@ The project is configured to run using Docker Compose, which will spin up the No
     docker-compose up --build
     ```
     This command will build the Docker images and start the services. The API will be available at `http://localhost:3000`, and the MQTT broker will be accessible on port `1883`.
+
+### Running Locally (without Docker Compose for API)
+
+You can also run the API directly on your machine, connecting to a local or Dockerized MongoDB instance.
+
+1.  **Ensure MongoDB is running:**
+    If you're using Docker Compose for MongoDB, start it:
+    ```bash
+    docker-compose up -d mongo
+    ```
+2.  **Start the API:**
+    ```bash
+    npm run start:prod
+    ```
+    The API will be available at `http://localhost:3000`.
 
 ## 📚 Project Evolution: A Day-by-Day Journey
 
@@ -90,9 +104,9 @@ The project is configured to run using Docker Compose, which will spin up the No
 - **Outcome:** A collaborative, multi-user application foundation with secure invitation and household management features.
 
 ### Day 7: Professionalism and Automation Features
-- **Objective:** Enhance the API with features crucial for professional development and automation.
-- **Key Activities:** Integrated Swagger UI for interactive API documentation, refined the logging system to output structured JSON for production readiness, set up a basic CI workflow using GitHub Actions for automated builds and tests, and ensured consistent environment variable naming.
-- **Outcome:** Improved API usability, maintainability, and automated quality assurance.
+- **Objective:** Enhance the API with features crucial for professional development and automation, including a robust CI/CD pipeline and optimized Docker images.
+- **Key Activities:** Integrated Swagger UI for interactive API documentation, refined the logging system to output structured JSON for production readiness, implemented a multi-stage Dockerfile for smaller and more secure production images, and set up a comprehensive CI/CD pipeline using GitHub Actions for automated builds, tests, and Docker image pushes.
+- **Outcome:** Improved API usability, maintainability, and automated quality assurance with a production-ready deployment strategy.
 
 ### Day 8: Real-Time Systems: Implementing WebSockets for Device Status
 - **Objective:** Extend the REST API to support real-time communication using WebSockets.
