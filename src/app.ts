@@ -120,7 +120,8 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   logger.error({ err }, "Error handler middleware caught an error.");
   logger.error({ err }, "Unhandled API Error.");
 
-  const statusCode = err instanceof CustomError ? err.statusCode : 500;
+  const statusCode =
+    err instanceof CustomError ? (err as CustomError).statusCode : 500;
   const message =
     env.NODE_ENV === "production"
       ? "An unexpected error occurred."

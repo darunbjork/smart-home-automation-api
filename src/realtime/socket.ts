@@ -41,7 +41,8 @@ export const initializeSocketIo = (socketIoInstance: Server) => {
       (socket as AuthenticatedSocket).user = {
         userId: user._id,
         email: user.email,
-        households: user.households.map((id) => id.toString()),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        households: user.households.map((id: any) => id.toString()),
       };
 
       next();

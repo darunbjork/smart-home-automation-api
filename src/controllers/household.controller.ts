@@ -4,7 +4,7 @@ import * as householdService from "../services/household.service";
 import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
 import { IHousehold } from "../models/Household";
-import { IUser } from "../types/user.d";
+import { IUser } from "../types/user";
 
 // Helper function to prepare household response
 const prepareHouseholdResponse = (household: IHousehold) => {

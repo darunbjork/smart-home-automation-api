@@ -1,7 +1,7 @@
 import request from "supertest";
 import app from "../app";
-import { connect, disconnect } from 'mongoose'; // Added import
-import { MongoMemoryReplSet } from 'mongodb-memory-server'; // Added import
+import { connect, disconnect } from "mongoose"; // Added import
+import { MongoMemoryReplSet } from "mongodb-memory-server"; // Added import
 import User from "../models/User";
 import Household from "../models/Household";
 
@@ -125,9 +125,7 @@ describe("User Authentication and Household Management", () => {
     });
     expect(res1.statusCode).toEqual(401);
     console.log(res1.body);
-    expect(res1.body.error.message).toEqual(
-      "Invalid credentials.",
-    );
+    expect(res1.body.error.message).toEqual("Invalid credentials.");
 
     // Register a user
     await request(app).post("/users/register").send({

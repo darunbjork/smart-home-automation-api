@@ -14,6 +14,8 @@ const connectDB = async () => {
 
     // Connect to MongoDB using Mongoose
     await mongoose.connect(mongoURI, {
+      connectTimeoutMS: 30000, // Give up after 30 seconds
+      serverSelectionTimeoutMS: 30000, // Keep trying to send operations for 30 seconds
       // These options are recommended for new deployments to avoid deprecation warnings
       // and ensure stable connections.
       // Senior insight: Keep up-to-date with driver options and best practices.

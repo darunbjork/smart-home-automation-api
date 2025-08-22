@@ -1,6 +1,6 @@
  // test/setup.ts
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
-import { connect, connection, disconnect } from 'mongoose'; // Import mongoose
+import { connect, connection } from 'mongoose'; // Import mongoose
 
 declare global {
   var __MONGOD__: MongoMemoryReplSet;

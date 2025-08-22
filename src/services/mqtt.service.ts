@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // smart-home-automation-api/src/services/mqtt.service.ts
-import Aedes, { Client } from "aedes";
+import Aedes from "aedes";
+import { Client } from "aedes";
 import * as net from "net";
 import * as mqtt from "mqtt";
 import { Types } from "mongoose";
@@ -8,7 +10,7 @@ import Device from "../models/Device";
 import { emitToHousehold } from "../realtime/socket";
 
 const MQTT_PORT = 1883;
-let aedesBroker: Aedes;
+let aedesBroker: any;
 let mqttClient: mqtt.MqttClient;
 
 // Senior Insight: Use a robust topic structure for multi-tenancy and clarity.
@@ -19,7 +21,7 @@ const getStatusTopic = (householdId: string, deviceId: string) =>
   `smarthome/household/${householdId}/device/${deviceId}/status`;
 
 export const initializeMqttBroker = () => {
-  aedesBroker = new Aedes();
+  aedesBroker = new (Aedes as any).default();
 
   aedesBroker.on("client", (client: Client) => {
     logger.info(`MQTT Client connected: ${client.id}`);
@@ -68,7 +70,11 @@ const initializeMqttClient = () => {
           // Update the device in our database
           device.data = { ...device.data, ...data };
           if (data.status) {
-            device.status = data.status as "online" | "offline" | "unknown" | "pending";
+            device.status = data.status as
+              | "online"
+              | "offline"
+              | "unknown"
+              | "pending";
           }
           await device.save();
 
@@ -95,7 +101,7 @@ const initializeMqttClient = () => {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const subscribeToAllDeviceStatusTopics = async () => {
   const devices = await Device.find({}, "household _id");
-  const topics = devices.map((device) =>
+  const topics = devices.map((device: any) =>
     getStatusTopic(device.household.toString(), device._id.toString()),
   );
   if (topics.length > 0) {

@@ -22,6 +22,7 @@ export const registerUser = async (
 
     // Senior Insight: Use a transaction to ensure user and household are created atomically.
     const session = await User.startSession();
+    await new Promise((resolve) => setTimeout(resolve, 100)); // Add a small delay before starting the transaction
     session.startTransaction();
     try {
       const user = new User({
