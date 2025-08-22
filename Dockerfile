@@ -31,7 +31,7 @@ RUN npm install --omit=dev
 COPY --from=builder /app/dist ./dist
 
 # Copy other essential files
-COPY --from=builder /app/.env ./
+
 COPY --from=builder /app/package.json ./
 
 # Expose the application port

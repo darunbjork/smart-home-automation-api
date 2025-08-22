@@ -22,7 +22,7 @@ export default async () => {
   await connect(uri);
   await connection.db!.admin().command({
     setParameter: 1,
-    transactionLifetimeLimitSeconds: 60
+    transactionLifetimeLimitSeconds: 1200
   });
   // await disconnect(); // Disconnect after setting parameters - REMOVED
   
