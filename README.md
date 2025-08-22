@@ -71,6 +71,10 @@ You can also run the API directly on your machine, connecting to a local or Dock
     ```
     The API will be available at `http://localhost:3000`.
 
+## 🚀 Deployment to AWS
+
+This project is designed for cloud deployment. A detailed guide on how to deploy this application to AWS, including setting up AWS CLI, ECR, and pushing Docker images, can be found in the [AWS Deployment Guide](docs/aws-deployment-guide.md).
+
 ## 📚 Project Evolution: A Day-by-Day Journey
 
 ### Day 1: Project Initialization & Enterprise Setup
