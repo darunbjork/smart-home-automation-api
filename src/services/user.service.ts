@@ -20,45 +20,29 @@ export const registerUser = async (
       throw new CustomError("A user with this email already exists.", 409);
     }
 
-    // Senior Insight: Use a transaction to ensure user and household are created atomically.
-    const session = await User.startSession();
-    await new Promise((resolve) => setTimeout(resolve, 100)); // Add a small delay before starting the transaction
-    session.startTransaction();
-    try {
-      const user = new User({
-        username,
-        email,
-        password,
-        role: "owner", // Default role for a new user is 'owner'
-      });
-      await user.save({ session });
+    const user = new User({
+      username,
+      email,
+      password,
+      role: "owner", // Default role for a new user is 'owner'
+    });
+    await user.save();
 
-      const household = new Household({
-        name: householdName, // Use provided name instead of generating
-        owner: user._id,
-        members: [user._id], // Add the user as the first member
-      });
-      await household.save({ session });
+    const household = new Household({
+      name: householdName, // Use provided name instead of generating
+      owner: user._id,
+      members: [user._id], // Add the user as the first member
+    });
+    await household.save();
 
-      // Link the household to the user
-      user.households.push(household._id);
-      await user.save({ session });
+    // Link the household to the user
+    user.households.push(household._id);
+    await user.save();
 
-      await session.commitTransaction();
-      logger.info(
-        `New user ${user.username} registered with a new household: ${household.name}.`,
-      );
-      return user;
-    } catch (error) {
-      await session.abortTransaction();
-      logger.error(
-        { error },
-        "Failed to register user and create household due to transaction error.",
-      );
-      throw error;
-    } finally {
-      session.endSession();
-    }
+    logger.info(
+      `New user ${user.username} registered with a new household: ${household.name}.`,
+    );
+    return user;
   } catch (error: unknown) {
     if (error instanceof CustomError) {
       // Check if it's already a CustomError

@@ -21,7 +21,7 @@ const getStatusTopic = (householdId: string, deviceId: string) =>
   `smarthome/household/${householdId}/device/${deviceId}/status`;
 
 export const initializeMqttBroker = () => {
-  aedesBroker = new (Aedes as any).default();
+  aedesBroker = new Aedes();
 
   aedesBroker.on("client", (client: Client) => {
     logger.info(`MQTT Client connected: ${client.id}`);
