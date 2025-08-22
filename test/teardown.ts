@@ -1,5 +1,4 @@
-/* eslint-disable no-undef */
-// test/teardown.js
+ // test/teardown.js
 import { disconnect } from 'mongoose'; // Import mongoose
 
 export default async () => {

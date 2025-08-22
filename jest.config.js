@@ -3,7 +3,7 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  testMatch: ["**/?(*.)+(spec|test).[tj]s?(x)"],
+  testMatch: ["<rootDir>/src/**/*.test.ts", "<rootDir>/src/**/*.spec.ts"],
   collectCoverage: true,
   coverageDirectory: "coverage",
   coveragePathIgnorePatterns: [
@@ -14,6 +14,6 @@ module.exports = {
     "/dist/"
   ],
   verbose: true,
-  globalSetup: './test/setup.js',
-  globalTeardown: './test/teardown.js',
+  globalSetup: './test/setup.ts',
+  globalTeardown: './test/teardown.ts',
 };

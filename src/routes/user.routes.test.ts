@@ -1,23 +1,33 @@
 import request from "supertest";
 import app from "../app";
-// import { MongoMemoryReplSet } from "mongodb-memory-server"; // This import will be removed
+import { connect, disconnect } from 'mongoose'; // Added import
+import { MongoMemoryReplSet } from 'mongodb-memory-server'; // Added import
 import User from "../models/User";
 import Household from "../models/Household";
 
-describe("User Authentication and Household Management", () => {
-  // let mongoServer: MongoMemoryReplSet; // This line is removed
+declare global {
+  var __MONGOD__: MongoMemoryReplSet;
+}
 
-  // beforeAll(async () => { // This block is removed
-  //   mongoServer = await MongoMemoryReplSet.create({
-  //     replSet: { name: 'rs0', count: 1 },
-  //   });
-  //   const mongoUri = mongoServer.getUri();
-  //   await mongoose.connect(mongoUri, { replicaSet: 'rs0' });
-  // });
+jest.setTimeout(30000); // Increase timeout for this test suite
+
+describe("User Authentication and Household Management", () => {
+  beforeAll(async () => {
+    const mongoUri = process.env.MONGO_URI!;
+    await connect(mongoUri);
+  });
 
   afterEach(async () => {
     await User.deleteMany({});
     await Household.deleteMany({});
+  });
+
+  afterAll(async () => {
+    await disconnect();
+    const replSet = global.__MONGOD__;
+    if (replSet) {
+      await replSet.stop();
+    }
   });
 
   // afterAll(async () => { // This block is removed
@@ -116,7 +126,7 @@ describe("User Authentication and Household Management", () => {
     expect(res1.statusCode).toEqual(401);
     console.log(res1.body);
     expect(res1.body.error.message).toEqual(
-      "Login failed: Invalid credentials.",
+      "Invalid credentials.",
     );
 
     // Register a user

@@ -1,5 +1,4 @@
 // smart-home-automation-api/src/server.ts
-import app from "./app";
 import http from "http";
 import { Server as SocketIoServer } from "socket.io";
 import { env } from "./config/env";
@@ -10,11 +9,11 @@ import { initializeMqttBroker } from './services/mqtt.service'; // NEW: Import M
 
 const PORT = env.PORT;
 
+await connectDB(); // Await the connection
+
+import app from "./app"; // app is imported here after DB connection
+
 const server = http.createServer(app);
-
-connectDB();
-
-const io = new SocketIoServer(server, {
   cors: {
     origin:
       env.NODE_ENV === "development"

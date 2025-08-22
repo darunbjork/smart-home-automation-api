@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Socket.io Client</title>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+  <h1>Socket.io Client</h1>
+  <p>Open the console to see real-time updates.</p>
+
+  <script>
+    // Replace with your access token and household ID
+    const accessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGE3YTQ5ZDMyYzI1OTdlMGYxZmJlMTQiLCJyb2xlIjoib3duZXIiLCJpYXQiOjE3NTU4MTcxMjUsImV4cCI6MTc1NTgyMDcyNX0.EUw5k9Ha7T1or0J-TICaj0LBUDJ4rDKjj1qtmTzD4DY"; 
+    const householdId = "68a7a49d32c2597e0f1fbe16"; 
+
+    if (!accessToken || !householdId) {
+      console.error("Please provide an access token and household ID.");
+    } else {
+      const socket = io("http://localhost:3000", {
+        auth: {
+          token: accessToken
+        }
+      });
+      
+      socket.on("connect", () => {
+        console.log("Connected to the server with ID:", socket.id);
+      });
+
+      socket.on("connect_error", (err) => {
+        console.error("Connection failed:", err.message);
+      });
+
+      // Listen for events in our household room
+      socket.on("device:new", (device) => {
+        console.log("New device created!", device);
+      });
+
+      socket.on("device:update", (device) => {
+        console.log("Device updated!", device);
+      });
+
+      socket.on("disconnect", () => {
+        console.log("Disconnected from the server.");
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,7 +1,10 @@
-/* eslint-disable no-undef */
-// test/setup.js
+ // test/setup.ts
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { connect, connection, disconnect } from 'mongoose'; // Import mongoose
+
+declare global {
+  var __MONGOD__: MongoMemoryReplSet;
+}
 
 export default async () => {
   const replSet = await MongoMemoryReplSet.create({
@@ -14,11 +17,11 @@ export default async () => {
 
   // Connect to ensure replica set is ready
   await connect(uri);
-  await connection.db.admin().command({
+  await connection.db!.admin().command({
     setParameter: 1,
     transactionLifetimeLimitSeconds: 60
   });
-  await disconnect(); // Disconnect after setting parameters
+  // await disconnect(); // Disconnect after setting parameters - REMOVED
   
   global.__MONGOD__ = replSet;
 };
