@@ -5,6 +5,25 @@ const router = Router();
 
 /**
  * @darun-portfolio/apps/api/dist/config/swagger.js
+ * /:
+ *   get:
+ *     summary: Returns a welcome message
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: A welcome message
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: "Welcome to the Smart Home Automation API!"
+ */
+router.get("/", (req: Request, res: Response) => {
+  res.status(200).send("Welcome to the Smart Home Automation API!");
+});
+
+/**
+ * @darun-portfolio/apps/api/dist/config/swagger.js
  * /health:
  * get:
  * summary: Checks the health of the API

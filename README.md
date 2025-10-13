@@ -37,7 +37,7 @@ This is the backend API for a smart home automation system. It is built using No
     ```ini
     PORT=3000
     NODE_ENV=development
-    MONGO_URI=mongodb://localhost:27017/smart-home-db
+    MONGO_URI=mongodb://mongo:27017/smart-home-db
     JWT_SECRET= # Your JWT secret key
     JWT_REFRESH_SECRET= # Your JWT refresh secret key
     ACCESS_TOKEN_EXPIRES_IN=1h
@@ -46,34 +46,51 @@ This is the backend API for a smart home automation system. It is built using No
     ```
     (Note: `JWT_SECRET` and `JWT_REFRESH_SECRET` should be long, random strings for production.)
 
-### Running the Project
+### Running the Project with Docker Compose
 
 The project is configured to run using Docker Compose, which will spin up the Node.js API, an embedded MQTT broker, and a MongoDB instance.
 
 1.  **Build and run the containers:**
     ```bash
-    docker-compose up --build
+    docker-compose up -d
     ```
-    This command will build the Docker images and start the services. The API will be available at `http://localhost:3000`, and the MQTT broker will be accessible on port `1883`.
+    This command will build the Docker images and start the services in detached mode. The API will be available at `http://localhost:3000`, and the MQTT broker will be accessible on port `1883`.
 
-### Running Locally (without Docker Compose for API)
+## 🚀 Deployment
 
-You can also run the API directly on your machine, connecting to a local or Dockerized MongoDB instance.
+This project is designed for cloud deployment. Here are the instructions for deploying to Render.
 
-1.  **Ensure MongoDB is running:**
-    If you're using Docker Compose for MongoDB, start it:
-    ```bash
-    docker-compose up -d mongo
-    ```
-2.  **Start the API:**
-    ```bash
-    npm run start:prod
-    ```
-    The API will be available at `http://localhost:3000`.
+### Deployment to Render
 
-## 🚀 Deployment to AWS
+1.  **Create a MongoDB Atlas Database:**
+    *   Create a free account on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register).
+    *   Create a new project and a new "Shared" cluster.
+    *   Configure network access to allow connections from anywhere (`0.0.0.0/0`) or from your Render service's IP address.
+    *   Create a database user and get the connection string.
 
-This project is designed for cloud deployment. A detailed guide on how to deploy this application to AWS, including setting up AWS CLI, ECR, and pushing Docker images, can be found in the [AWS Deployment Guide](docs/aws-deployment-guide.md).
+2.  **Build and Push a Multi-Platform Docker Image:**
+    *   Create a free account on [Docker Hub](https://hub.docker.com/).
+    *   Log in to Docker Hub from your terminal: `docker login`
+    *   Build the multi-platform Docker image and push it to Docker Hub. This is necessary because Render uses a different architecture than some development machines (e.g., Apple Silicon Macs).
+        ```bash
+        docker buildx create --use
+        docker buildx build --platform linux/amd64,linux/arm64 -t YOUR_DOCKERHUB_USERNAME/smart-home-api:v1.0.0 --push .
+        ```
+
+3.  **Deploy on Render:**
+    *   Create a free account on [Render](https://render.com/).
+    *   On your Render Dashboard, click on "**+ New**" and then select "**Web Service**".
+    *   Choose "**Existing Image**" and enter the URL of your Docker image from Docker Hub (e.g., `docker.io/YOUR_DOCKERHUB_USERNAME/smart-home-api:v1.0.0`).
+    *   Give your service a name and choose the "**Free**" instance type.
+    *   Add the following environment variables:
+        *   `NODE_ENV`: `production`
+        *   `LOG_LEVEL`: `info`
+        *   `MONGO_URI`: The connection string for your MongoDB Atlas database.
+        *   `JWT_SECRET`: A long, random string.
+        *   `JWT_REFRESH_SECRET`: Another long, random string.
+        *   `ACCESS_TOKEN_EXPIRES_IN`: `1h`
+        *   `REFRESH_TOKEN_EXPIRES_IN`: `7d`
+    *   Click on "**Create Web Service**". Render will automatically deploy your application.
 
 ## 📚 Project Evolution: A Day-by-Day Journey
 
