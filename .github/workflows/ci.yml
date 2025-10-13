@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main  # Run this workflow on every push to the main branch
+      - feat/devops-pipeline # Also run on this branch
   pull_request:
     branches:
       - main  # Also run it on every pull request to main
@@ -41,30 +42,11 @@ jobs:
         run: npm run build
 
       # Step 6: Run tests with coverage
-      # A separate test database for CI is recommended.
-      # You can add environment variables for this.
       - name: Run Unit & Integration Tests
         run: npm test -- --coverage
         env:
           NODE_ENV: test
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          
-
-      # Step 7: Build and tag the Docker image and push to ECR
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1 # Your AWS region
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build and Push Docker Image to ECR
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: 126836729502.dkr.ecr.eu-central-1.amazonaws.com/smart-home-api:latest
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          ACCESS_TOKEN_EXPIRES_IN: ${{ secrets.ACCESS_TOKEN_EXPIRES_IN }}
+          REFRESH_TOKEN_EXPIRES_IN: ${{ secrets.REFRESH_TOKEN_EXPIRES_IN }}
