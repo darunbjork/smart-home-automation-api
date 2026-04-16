@@ -8,8 +8,8 @@ import healthRoutes from "./routes/health.routes";
 import userRoutes from "./routes/user.routes";
 import deviceRoutes from "./routes/device.routes";
 import householdRoutes from "./routes/household.routes";
-import swaggerUi from "swagger-ui-express"; // NEW
-import swaggerSpec from "./config/swagger"; // NEW
+import swaggerUi from "swagger-ui-express"; 
+import swaggerSpec from "./config/swagger";
 import { env } from "./config/env";
 import logger from "./utils/logger";
 import { CustomError } from "./middleware/error.middleware";
@@ -21,8 +21,8 @@ app.use(
   cors({
     origin:
       env.NODE_ENV === "development"
-        ? "http://localhost:3000"
-        : "http://localhost:5173/",
+        ? "http://localhost:5173" // Corrected for development
+        : "YOUR_FRONTEND_DOMAIN", // Placeholder for production
     credentials: true,
   }),
 );
