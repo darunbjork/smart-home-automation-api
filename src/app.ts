@@ -1,4 +1,3 @@
-// smart-home-automation-api/src/app.ts
 import express, { Application, Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -8,8 +7,8 @@ import healthRoutes from "./routes/health.routes";
 import userRoutes from "./routes/user.routes";
 import deviceRoutes from "./routes/device.routes";
 import householdRoutes from "./routes/household.routes";
-import swaggerUi from "swagger-ui-express"; // NEW
-import swaggerSpec from "./config/swagger"; // NEW
+import swaggerUi from "swagger-ui-express"; 
+import swaggerSpec from "./config/swagger";
 import { env } from "./config/env";
 import logger from "./utils/logger";
 import { CustomError } from "./middleware/error.middleware";
@@ -19,13 +18,22 @@ const app: Application = express();
 app.use(helmet());
 app.use(
   cors({
-    origin:
-      env.NODE_ENV === "development"
-        ? "http://localhost:3000"
-        : "http://localhost:5173/",
+    origin: env.NODE_ENV === "development"
+      ? "http://localhost:5173"
+      : env.FRONTEND_URL, 
     credentials: true,
-  }),
+  })
 );
+
+// Only apply rate limiting in production
+if (env.NODE_ENV === "production") {
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: "Too many requests...",
+  });
+  app.use(apiLimiter);
+}
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -34,7 +42,9 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(apiLimiter);
+if (env.NODE_ENV === "production") {
+  app.use(apiLimiter);
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
