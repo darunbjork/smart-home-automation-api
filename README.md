@@ -139,6 +139,16 @@ This project is designed for cloud deployment. Here are the instructions for dep
 - **Key Activities:** Integrated `aedes` (embedded MQTT broker) and `mqtt` (client library), designed topic structure, implemented command publishing and status update handling, and established a closed-loop system for device control and feedback.
 - **Outcome:** A fully functional IoT backend capable of communicating with real-world devices.
 
+### CORS Configuration Update for Development
+
+**Reasoning:** The frontend application was running on `http://localhost:5173`, but the backend API was configured to only allow requests from `http://localhost:3000` during development. This caused Cross-Origin Resource Sharing (CORS) errors, preventing the frontend from communicating with the API.
+
+**Changes Made:**
+- In `src/app.ts`, the `cors` middleware's `origin` setting for development environments was updated from `"http://localhost:3000"` to `"http://localhost:5173"`.
+- In `src/server.ts`, the `cors` configuration for Socket.IO was updated to include `"http://localhost:5173"` in the list of allowed origins for development.
+
+This change ensures that the frontend running on `http://localhost:5173` can successfully connect to the backend API during development.
+
 ## 🧪 Testing
 
 ### Running Tests
