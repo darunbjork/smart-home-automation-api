@@ -21,8 +21,8 @@ app.use(
   cors({
     origin:
       env.NODE_ENV === "development"
-        ? "http://localhost:5173" // Corrected for development
-        : "http://localhost:5173", // Placeholder for production
+        ? "http://localhost:3000"
+        : "http://localhost:5173/",
     credentials: true,
   }),
 );
