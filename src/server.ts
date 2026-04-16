@@ -20,7 +20,7 @@ const PORT = env.PORT;
     cors: {
       origin:
         env.NODE_ENV === "development"
-          ? ["http://localhost:3000", "http://127.0.0.1:5500"]
+          ? ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5500"]
           : "YOUR_FRONTEND_DOMAIN",
       methods: ["GET", "POST"],
       credentials: true,

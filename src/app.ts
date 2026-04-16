@@ -21,7 +21,7 @@ app.use(
   cors({
     origin:
       env.NODE_ENV === "development"
-        ? "http://localhost:3000"
+        ? "http://localhost:5173"
         : "YOUR_FRONTEND_DOMAIN",
     credentials: true,
   }),
