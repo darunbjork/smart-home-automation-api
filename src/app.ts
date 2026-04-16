@@ -8,7 +8,7 @@ import userRoutes from "./routes/user.routes";
 import deviceRoutes from "./routes/device.routes";
 import householdRoutes from "./routes/household.routes";
 import swaggerUi from "swagger-ui-express"; 
-import swaggerSpec from "./config/swagger";
+import swaggerSpec from "./config/swagger"; 
 import { env } from "./config/env";
 import logger from "./utils/logger";
 import { CustomError } from "./middleware/error.middleware";
@@ -16,11 +16,13 @@ import { CustomError } from "./middleware/error.middleware";
 const app: Application = express();
 
 app.use(helmet());
+
 app.use(
   cors({
-    origin: env.NODE_ENV === "development"
+    origin:
+     env.NODE_ENV === "development"
       ? "http://localhost:5173"
-      : env.FRONTEND_URL, 
+      : process.env.FRONTEND_URL || "https://yourdomain.com",
     credentials: true,
   })
 );
@@ -50,14 +52,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// --- Documentation Route (NEW) ---
+// --- Documentation Route ---
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // --- Routes ---
 app.use("/", healthRoutes);
 app.use("/users", userRoutes);
 app.use("/devices", deviceRoutes);
-app.use("/households", householdRoutes); // NEW: Add household routes
+app.use("/households", householdRoutes);
 
 // Define Swagger/OpenAPI schemas and responses...
 /**
