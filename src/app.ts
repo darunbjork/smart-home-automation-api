@@ -22,7 +22,7 @@ app.use(
     origin:
       env.NODE_ENV === "development"
         ? "http://localhost:5173" // Corrected for development
-        : "YOUR_FRONTEND_DOMAIN", // Placeholder for production
+        : "http://localhost:5173", // Placeholder for production
     credentials: true,
   }),
 );
@@ -34,7 +34,9 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(apiLimiter);
+if (env.NODE_ENV === "production") {
+  app.use(apiLimiter);
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
