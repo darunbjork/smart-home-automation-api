@@ -11,21 +11,19 @@ import app from "./app"; // app is imported here
 const PORT = env.PORT;
 
 (async () => {
-  // Start of async IIFE
-  await connectDB(); // Await the connection
+  await connectDB();
 
   const server = http.createServer(app);
 
-  const io = new SocketIoServer(server, {
-    cors: {
-      origin:
-        env.NODE_ENV === "development"
-          ? ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5500"] // Removed trailing slash
-          : "YOUR_FRONTEND_DOMAIN", // Placeholder for production
-      methods: ["GET", "POST"],
-      credentials: true,
-    },
-  });
+const io = new SocketIoServer(server, {
+  cors: {
+    origin: env.NODE_ENV === "development"
+      ? ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5500"]
+      : env.FRONTEND_URL,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
 
   initializeSocketIo(io);
   initializeMqttBroker(); // NEW: Start the MQTT broker

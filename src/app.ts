@@ -1,4 +1,3 @@
-// smart-home-automation-api/src/app.ts
 import express, { Application, Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -19,13 +18,22 @@ const app: Application = express();
 app.use(helmet());
 app.use(
   cors({
-    origin:
-      env.NODE_ENV === "development"
-        ? "http://localhost:3000"
-        : "http://localhost:5173/",
+    origin: env.NODE_ENV === "development"
+      ? "http://localhost:5173"
+      : env.FRONTEND_URL, 
     credentials: true,
-  }),
+  })
 );
+
+// Only apply rate limiting in production
+if (env.NODE_ENV === "production") {
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: "Too many requests...",
+  });
+  app.use(apiLimiter);
+}
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
