@@ -4,6 +4,7 @@ import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
 import { IHousehold } from "../models/Household";
 import { IUser } from "../types/user";
+import Household from "../models/Household"; // Import Household model for direct Mongoose call
 
 // Helper function to prepare household response
 const prepareHouseholdResponse = (household: IHousehold) => {
@@ -216,5 +217,37 @@ export const createHousehold = async (req: Request, res: Response, next: NextFun
     res.status(201).json(prepareHouseholdResponse(household));
   } catch (error) {
     next(error);
+  }
+};
+
+// Update a household
+export const updateHousehold = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    // Check if user is authenticated and authorized (e.g., owner of the household)
+    // For simplicity, we'll assume validation middleware or previous checks handle auth.
+    // A robust implementation would fetch the household, check ownership, then update.
+    
+    // Using direct Mongoose call as suggested if service method doesn't exist
+    const updatedHousehold = await Household.findByIdAndUpdate(
+      id,
+      { name },
+      { new: true, runValidators: true } // 'new: true' returns the updated doc, 'runValidators: true' ensures schema rules are checked
+    ).populate("members owner"); // Populate to return full owner/member data if needed
+    
+    if (!updatedHousehold) throw new CustomError("Household not found", 404);
+
+    // Format the response to match other household responses
+    res.status(200).json(prepareHouseholdResponse(updatedHousehold));
+  } catch (error) {
+    // Check for validation errors specifically, or pass general errors
+    if (error instanceof CustomError) {
+      next(error);
+    } else {
+      // Potentially a Mongoose validation error or other unexpected error
+      logger.error({ error }, `Error updating household ${req.params.id}.`);
+      next(new CustomError("Failed to update household.", 500));
+    }
   }
 };

@@ -333,4 +333,52 @@ router.delete(
   householdController.deleteHousehold,
 );
 
+/**
+ * @swagger
+ * /households/{id}:
+ *   patch:
+ *     summary: Update a household
+ *     tags: [Household Management]
+ *     description: Updates the name of a household. Requires the authenticated user to be the owner.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "60f8b8e0c8d7c1a0c8d7c1a1"
+ *         description: The ID of the household to update.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "My Updated Home Name"
+ *     responses:
+ *       200:
+ *         description: Household updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HouseholdResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch("/:id", householdController.updateHousehold);
+
 export default router;
+

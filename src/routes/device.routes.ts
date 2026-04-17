@@ -208,6 +208,6 @@ router.patch(
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.delete("/id", validateDeviceParam, deviceController.deleteDevice);
+router.delete("/:id", validateDeviceParam, deviceController.deleteDevice);
 
 export default router;
