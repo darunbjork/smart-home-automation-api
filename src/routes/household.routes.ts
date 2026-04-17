@@ -45,6 +45,10 @@ router.use(authenticate);
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
+// Get all households for the authenticated user
+router.get("/", householdController.getHouseholds);
+
+// Create a new household
 router.post("/", householdController.createHousehold);
 
 /**
@@ -296,6 +300,7 @@ router.get(
   validateHouseholdParam,
   householdController.getHouseholdById,
 );
+
 
 /**
  * @swagger
