@@ -47,7 +47,44 @@ router.use(authenticate);
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.get("/", householdController.getHouseholds);
+router.post("/", householdController.createHousehold);
+
+/**
+ * @swagger
+ * /households:
+ *   post:
+ *     summary: Create a new household
+ *     tags: [Household Management]
+ *     description: Creates a new household with the provided name for the authenticated user. The user will be set as the owner and an initial member.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "My Awesome Home"
+ *     responses:
+ *       201:
+ *         description: Household created successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HouseholdResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+
 
 /**
  * @swagger

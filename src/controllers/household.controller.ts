@@ -1,4 +1,3 @@
-// smart-home-automation-api/src/controllers/household.controller.ts
 import { Request, Response, NextFunction } from "express";
 import * as householdService from "../services/household.service";
 import { CustomError } from "../middleware/error.middleware";
@@ -199,6 +198,23 @@ export const leaveHousehold = async (
     res.status(200).json({ message: "Successfully left the household." });
   } catch (error) {
     logger.error({ error }, `Error leaving household ${req.body.householdId}.`);
+    next(error);
+  }
+};
+
+// Create a new household
+export const createHousehold = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) throw new CustomError("User not authenticated.", 401);
+    
+    const { name } = req.body;
+    if (!name) throw new CustomError("Household name is required.", 400);
+    
+    const household = await householdService.createHousehold(name, userId);
+    // Return the created household, ensuring it's formatted correctly
+    res.status(201).json(prepareHouseholdResponse(household));
+  } catch (error) {
     next(error);
   }
 };

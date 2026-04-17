@@ -336,3 +336,34 @@ export const leaveHousehold = async (
     session.endSession();
   }
 };
+
+// --- Household Creation ---
+export const createHousehold = async (name: string, userId: string): Promise<IHousehold> => {
+  const userObjectId = new Types.ObjectId(userId);
+
+  const session = await Household.startSession();
+  session.startTransaction();
+  try {
+    // Create the new household
+    const household = new Household({
+      name,
+      owner: userObjectId,
+      members: [userObjectId], // The creator is automatically a member
+    });
+
+    await household.save({ session });
+
+    // Link the new household to the user's profile
+    await User.findByIdAndUpdate(userObjectId, { $push: { households: household._id } }, { session });
+
+    await session.commitTransaction();
+    logger.info(`Household "${name}" created by user ${userId}.`);
+    return household;
+  } catch (error) {
+    await session.abortTransaction();
+    logger.error({ error }, `Failed to create household "${name}".`);
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
