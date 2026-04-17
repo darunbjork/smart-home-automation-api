@@ -15,7 +15,7 @@
     "resolveJsonModule": true /* Allow importing .json files. */,
     "sourceMap": true /* Generate .map files for debugging. */,
     "inlineSources": true /* Emit the source alongside the sourcemap within a single file; requires --sourceMap to be set. */,
-    "types": ["jest", "node"]
+    "types": ["jest", "node"] /* Explicitly include Jest and Node.js types */
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "test/**/*.ts"],
   "exclude": ["node_modules", "dist"]
