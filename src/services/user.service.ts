@@ -12,18 +12,25 @@ export const registerUser = async (
   householdName: string, 
 ): Promise<IUser> => {
   try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    // Explicitly check for existing user by email OR username
+    const existingUserByEmail = await User.findOne({ email });
+    if (existingUserByEmail) {
       throw new CustomError("A user with this email already exists.", 409);
     }
 
+    const existingUserByUsername = await User.findOne({ username });
+    if (existingUserByUsername) {
+      throw new CustomError("A user with this username already exists.", 409);
+    }
+
+    // If no duplicates found, proceed to create
     const user = new User({
       username,
       email,
       password,
       role: "owner",
     });
-    await user.save();
+    await user.save(); // Mongoose unique indexes should still catch anything missed
 
     const household = new Household({
       name: householdName,
@@ -48,6 +55,7 @@ export const registerUser = async (
       message: string;
       statusCode?: number;
     };
+    // Check for MongoDB duplicate key error code (11000) - this catches username/email uniqueness from Mongoose indexes
     if (asError.code === 11000) {
       throw new CustomError("Username or email already exists.", 409);
     }

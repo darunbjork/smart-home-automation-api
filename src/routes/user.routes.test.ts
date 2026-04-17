@@ -67,6 +67,7 @@ describe("User Authentication and Household Management", () => {
   });
 
   it("should not register a user with duplicate username or email", async () => {
+    // First registration (successful)
     await request(app).post("/users/register").send({
       username: "duplicateuser",
       email: "duplicate@example.com",
@@ -74,24 +75,28 @@ describe("User Authentication and Household Management", () => {
       householdName: "Duplicate Household",
     });
 
+    // Second registration attempt with duplicate username
     const res1 = await request(app).post("/users/register").send({
-      username: "duplicateuser",
-      email: "another@example.com",
+      username: "duplicateuser", // Duplicate username
+      email: "another@example.com", // NEW email
       password: "password123",
       householdName: "Another Household",
     });
     expect(res1.statusCode).toEqual(409);
+    // UPDATED ASSERTION: Match the specific error message thrown by the service for duplicate username
     expect(res1.body.error.message).toEqual(
-      "Username or email already exists.",
+      "A user with this username already exists.", 
     );
 
+    // Third registration attempt with unique username but duplicate email
     const res2 = await request(app).post("/users/register").send({
       username: "uniqueuser",
-      email: "duplicate@example.com",
+      email: "duplicate@example.com", // Duplicate email
       password: "password123",
       householdName: "Unique Household",
     });
     expect(res2.statusCode).toEqual(409);
+    // This assertion for duplicate email should still be correct
     expect(res2.body.error.message).toEqual(
       "A user with this email already exists.",
     );
