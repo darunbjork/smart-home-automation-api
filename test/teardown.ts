@@ -1,5 +1,5 @@
  // test/teardown.js
-import { disconnect } from 'mongoose'; // Import mongoose
+import { disconnect } from 'mongoose';
 
 export default async () => {
   await disconnect(); // Ensure mongoose connection is closed
