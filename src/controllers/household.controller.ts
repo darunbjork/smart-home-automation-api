@@ -4,15 +4,14 @@ import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
 import { IHousehold } from "../models/Household";
 import { IUser } from "../types/user";
-import Household from "../models/Household"; // Import Household model for direct Mongoose call
+import Household from "../models/Household";
 
-// Helper function to prepare household response
+
 const prepareHouseholdResponse = (household: IHousehold) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { __v: _, ...householdResponse } = household.toObject({
     getters: true,
   });
-  // Clean up member and owner details
   householdResponse.owner = householdResponse.owner
     ? householdResponse.owner._id
     : householdResponse.owner;
@@ -22,7 +21,6 @@ const prepareHouseholdResponse = (household: IHousehold) => {
   return householdResponse;
 };
 
-// Get all households for the authenticated user
 export const getHouseholds = async (
   req: Request,
   res: Response,
@@ -43,7 +41,6 @@ export const getHouseholds = async (
   }
 };
 
-// Get a single household by ID
 export const getHouseholdById = async (
   req: Request,
   res: Response,
@@ -65,7 +62,6 @@ export const getHouseholdById = async (
   }
 };
 
-// Delete a household (requires owner role)
 export const deleteHousehold = async (
   req: Request,
   res: Response,
@@ -86,7 +82,6 @@ export const deleteHousehold = async (
   }
 };
 
-// Invite a user to a household (requires owner role)
 export const inviteUser = async (
   req: Request,
   res: Response,
@@ -115,7 +110,6 @@ export const inviteUser = async (
   }
 };
 
-// Get pending invitations for the user
 export const getInvitations = async (
   req: Request,
   res: Response,
@@ -134,7 +128,6 @@ export const getInvitations = async (
   }
 };
 
-// Accept an invitation
 export const acceptInvitation = async (
   req: Request,
   res: Response,
@@ -160,7 +153,6 @@ export const acceptInvitation = async (
   }
 };
 
-// Decline an invitation
 export const declineInvitation = async (
   req: Request,
   res: Response,
@@ -183,7 +175,6 @@ export const declineInvitation = async (
   }
 };
 
-// Leave a household
 export const leaveHousehold = async (
   req: Request,
   res: Response,
@@ -203,7 +194,6 @@ export const leaveHousehold = async (
   }
 };
 
-// Create a new household
 export const createHousehold = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.userId;
@@ -220,32 +210,23 @@ export const createHousehold = async (req: Request, res: Response, next: NextFun
   }
 };
 
-// Update a household
 export const updateHousehold = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
-    // Check if user is authenticated and authorized (e.g., owner of the household)
-    // For simplicity, we'll assume validation middleware or previous checks handle auth.
-    // A robust implementation would fetch the household, check ownership, then update.
-    
-    // Using direct Mongoose call as suggested if service method doesn't exist
     const updatedHousehold = await Household.findByIdAndUpdate(
       id,
       { name },
-      { new: true, runValidators: true } // 'new: true' returns the updated doc, 'runValidators: true' ensures schema rules are checked
-    ).populate("members owner"); // Populate to return full owner/member data if needed
+      { new: true, runValidators: true } 
+    ).populate("members owner"); 
     
     if (!updatedHousehold) throw new CustomError("Household not found", 404);
 
-    // Format the response to match other household responses
     res.status(200).json(prepareHouseholdResponse(updatedHousehold));
   } catch (error) {
-    // Check for validation errors specifically, or pass general errors
     if (error instanceof CustomError) {
       next(error);
     } else {
-      // Potentially a Mongoose validation error or other unexpected error
       logger.error({ error }, `Error updating household ${req.params.id}.`);
       next(new CustomError("Failed to update household.", 500));
     }

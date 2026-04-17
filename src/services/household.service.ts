@@ -1,4 +1,3 @@
-// smart-home-automation-api/src/services/household.service.ts
 import { Types } from "mongoose";
 import crypto from "crypto";
 import Household, { IHousehold } from "../models/Household";
@@ -8,7 +7,6 @@ import Invitation, { IInvitation } from "../models/Invitation";
 import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
 
-// Helper function to check if a user is an owner of a household
 const isUserOwnerOfHousehold = async (
   userId: Types.ObjectId,
   householdId: Types.ObjectId,
@@ -18,9 +16,6 @@ const isUserOwnerOfHousehold = async (
   return household.owner.equals(userId);
 };
 
-// --- Household CRUD Operations ---
-
-// Get all households for a user
 export const getHouseholdsForUser = async (
   userId: string,
 ): Promise<IHousehold[]> => {
@@ -32,7 +27,6 @@ export const getHouseholdsForUser = async (
   return user.households as IHousehold[];
 };
 
-// Get a single household by ID
 export const getHouseholdById = async (
   householdId: string,
   userId: string,
@@ -49,7 +43,6 @@ export const getHouseholdById = async (
   return household as IHousehold;
 };
 
-// Delete a household (cascading deletion)
 export const deleteHousehold = async (
   householdId: string,
   userId: string,
@@ -57,7 +50,6 @@ export const deleteHousehold = async (
   const householdObjectId = new Types.ObjectId(householdId);
   const userObjectId = new Types.ObjectId(userId);
 
-  // Senior Insight: Crucial security check. Only the owner can delete the household.
   if (!(await isUserOwnerOfHousehold(userObjectId, householdObjectId))) {
     throw new CustomError(
       "Only the household owner can delete the household.",
@@ -65,14 +57,11 @@ export const deleteHousehold = async (
     );
   }
 
-  // Senior Insight: Perform cascading deletion to maintain data integrity.
   const session = await Household.startSession();
   session.startTransaction();
   try {
-    // 1. Delete all devices in the household
     await Device.deleteMany({ household: householdObjectId }, { session });
 
-    // 2. Remove household from all members' household list and change role to 'member' if they are an owner and not in another household.
     const household =
       await Household.findById(householdObjectId).session(session);
     if (household) {
@@ -82,19 +71,14 @@ export const deleteHousehold = async (
           memberId,
           {
             $pull: { households: householdObjectId },
-            // Note: Logic for role change is more complex. For now, we'll leave role untouched.
-            // In a more advanced system, if the user becomes an 'owner' of another household,
-            // their role would remain 'owner'. If not, they would become 'member' or be deleted.
           },
           { session },
         );
       }
     }
 
-    // 3. Delete all outstanding invitations for this household
     await Invitation.deleteMany({ household: householdObjectId }, { session });
 
-    // 4. Delete the household itself
     const result = await Household.deleteOne(
       { _id: householdObjectId },
       { session },
@@ -119,9 +103,6 @@ export const deleteHousehold = async (
   }
 };
 
-// --- Invitation Management ---
-
-// Invite a user to a household
 export const inviteUserToHousehold = async (
   householdId: string,
   inviterId: string,
@@ -130,7 +111,6 @@ export const inviteUserToHousehold = async (
   const householdObjectId = new Types.ObjectId(householdId);
   const inviterObjectId = new Types.ObjectId(inviterId);
 
-  // Security check: Only the household owner can send invitations.
   if (!(await isUserOwnerOfHousehold(inviterObjectId, householdObjectId))) {
     throw new CustomError("Only the household owner can invite users.", 403);
   }
@@ -142,18 +122,14 @@ export const inviteUserToHousehold = async (
     throw new CustomError("Household not found.", 404);
   }
 
-  // Find the invitee user by email
   const invitee = await User.findOne({ email: inviteeEmail });
   if (!invitee) {
-    // Senior Insight: If user doesn't exist, we can still send an invitation.
-    // The user will be created upon accepting the invitation.
     logger.warn(`Invitation sent to non-existent user email: ${inviteeEmail}.`);
   } else {
-    // Check if the user is already a member
     if (household.members.some((member) => member._id.equals(invitee._id))) {
       throw new CustomError("User is already a member of this household.", 409);
     }
-    // Check if there's a pending invitation
+
     const existingInvitation = await Invitation.findOne({
       household: householdObjectId,
       inviteeEmail,
@@ -166,8 +142,8 @@ export const inviteUserToHousehold = async (
     }
   }
 
-  const token = crypto.randomBytes(32).toString("hex"); // Generate a secure, random token
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // Expires in 24 hours
+  const token = crypto.randomBytes(32).toString("hex"); 
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   const invitation = new Invitation({
     household: householdObjectId,
@@ -184,7 +160,6 @@ export const inviteUserToHousehold = async (
   return invitation;
 };
 
-// Get pending invitations for a user
 export const getInvitationsForUser = async (
   userId: string,
 ): Promise<IInvitation[]> => {
@@ -198,7 +173,6 @@ export const getInvitationsForUser = async (
   return invitations;
 };
 
-// Accept an invitation
 export const acceptInvitation = async (
   token: string,
   userId: string,
@@ -222,25 +196,21 @@ export const acceptInvitation = async (
     throw new CustomError("Household not found.", 404);
   }
 
-  // Senior Insight: Use a transaction to ensure atomicity of updates.
   const session = await Household.startSession();
   session.startTransaction();
   try {
-    // 1. Add user to the household's members list
     await Household.findByIdAndUpdate(
       household._id,
       { $addToSet: { members: userObjectId } },
       { session },
     );
 
-    // 2. Add the household to the user's household list
     await User.findByIdAndUpdate(
       userObjectId,
       { $addToSet: { households: household._id } },
       { session },
     );
 
-    // 3. Delete the invitation
     await Invitation.deleteOne({ _id: invitation._id }, { session });
 
     await session.commitTransaction();
@@ -260,7 +230,6 @@ export const acceptInvitation = async (
   }
 };
 
-// Decline an invitation
 export const declineInvitation = async (
   token: string,
   userId: string,
@@ -284,7 +253,6 @@ export const declineInvitation = async (
   );
 };
 
-// Leave a household
 export const leaveHousehold = async (
   householdId: string,
   userId: string,
@@ -297,7 +265,6 @@ export const leaveHousehold = async (
     throw new CustomError("Household not found.", 404);
   }
 
-  // Security check: Owner cannot leave the household. They must delete it.
   if (household.owner.equals(userObjectId)) {
     throw new CustomError(
       "Owners cannot leave their household; they must delete it instead.",
@@ -305,18 +272,15 @@ export const leaveHousehold = async (
     );
   }
 
-  // Senior Insight: Use a transaction for atomic update of both Household and User.
   const session = await Household.startSession();
   session.startTransaction();
   try {
-    // 1. Remove user from the household's members list
     await Household.findByIdAndUpdate(
       household._id,
       { $pull: { members: userObjectId } },
       { session },
     );
 
-    // 2. Remove the household from the user's household list
     await User.findByIdAndUpdate(
       userObjectId,
       { $pull: { households: household._id } },
@@ -337,23 +301,20 @@ export const leaveHousehold = async (
   }
 };
 
-// --- Household Creation ---
 export const createHousehold = async (name: string, userId: string): Promise<IHousehold> => {
   const userObjectId = new Types.ObjectId(userId);
 
   const session = await Household.startSession();
   session.startTransaction();
   try {
-    // Create the new household
     const household = new Household({
       name,
       owner: userObjectId,
-      members: [userObjectId], // The creator is automatically a member
+      members: [userObjectId],
     });
 
     await household.save({ session });
 
-    // Link the new household to the user's profile
     await User.findByIdAndUpdate(userObjectId, { $push: { households: household._id } }, { session });
 
     await session.commitTransaction();

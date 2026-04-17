@@ -8,7 +8,7 @@ import userRoutes from "./routes/user.routes";
 import deviceRoutes from "./routes/device.routes";
 import householdRoutes from "./routes/household.routes";
 import swaggerUi from "swagger-ui-express"; 
-import swaggerSpec from "./config/swagger";
+import swaggerSpec from "./config/swagger"; 
 import { env } from "./config/env";
 import logger from "./utils/logger";
 import { CustomError } from "./middleware/error.middleware";
@@ -19,9 +19,10 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: env.NODE_ENV === "development"
+    origin:
+     env.NODE_ENV === "development"
       ? "http://localhost:5173"
-      : env.FRONTEND_URL, 
+      : process.env.FRONTEND_URL || "https://yourdomain.com",
     credentials: true,
   })
 );

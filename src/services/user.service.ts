@@ -41,8 +41,7 @@ export const registerUser = async (
     return user;
   } catch (error: unknown) {
     if (error instanceof CustomError) {
-      // Check if it's already a CustomError
-      throw error; // Re-throw the CustomError directly
+      throw error; 
     }
     const asError = error as {
       code?: number;
@@ -50,7 +49,6 @@ export const registerUser = async (
       statusCode?: number;
     };
     if (asError.code === 11000) {
-      // MongoDB duplicate key error
       throw new CustomError("Username or email already exists.", 409);
     }
     throw new CustomError(
@@ -85,7 +83,7 @@ export const loginUser = async (
     const refreshToken = await generateRefreshToken(user); 
 
     logger.info(`User ${user.username} logged in successfully.`);
-    return { user, accessToken, refreshToken }; // Return tokens
+    return { user, accessToken, refreshToken };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     throw new CustomError(error.message, error.statusCode || 500);

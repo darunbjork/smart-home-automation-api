@@ -1,4 +1,3 @@
-// smart-home-automation-api/src/routes/device.routes.ts
 import { Router } from "express";
 import * as deviceController from "../controllers/device.controller";
 import { authenticate } from "../middleware/auth.middleware";
@@ -10,7 +9,6 @@ import {
 
 const router = Router();
 
-// All device routes require authentication
 router.use(authenticate);
 
 /**
