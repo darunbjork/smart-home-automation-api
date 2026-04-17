@@ -1,20 +1,17 @@
-// smart-home-automation-api/src/services/user.service.ts
 import User from "../models/User";
-import Household from "../models/Household"; // Make sure Household is imported
+import Household from "../models/Household"; 
 import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
 import { IUser } from "../types/user.d";
 import { generateAccessToken, generateRefreshToken } from "./auth.service";
 
-// Register a new user and create their first household
 export const registerUser = async (
   username: string,
   email: string,
   password: string,
-  householdName: string, // Added householdName
+  householdName: string, 
 ): Promise<IUser> => {
   try {
-    // Check if the user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new CustomError("A user with this email already exists.", 409);
@@ -24,18 +21,17 @@ export const registerUser = async (
       username,
       email,
       password,
-      role: "owner", // Default role for a new user is 'owner'
+      role: "owner",
     });
     await user.save();
 
     const household = new Household({
-      name: householdName, // Use provided name instead of generating
+      name: householdName,
       owner: user._id,
-      members: [user._id], // Add the user as the first member
+      members: [user._id],
     });
     await household.save();
 
-    // Link the household to the user
     user.households.push(household._id);
     await user.save();
 
@@ -64,7 +60,6 @@ export const registerUser = async (
   }
 };
 
-// Login an existing user
 export const loginUser = async (
   email: string,
   password: string,
@@ -86,9 +81,8 @@ export const loginUser = async (
       `User object before token generation: ${JSON.stringify(user)}`,
     );
 
-    // Senior insight: Generate tokens upon successful login.
     const accessToken = generateAccessToken(user);
-    const refreshToken = await generateRefreshToken(user); // Await for DB operation
+    const refreshToken = await generateRefreshToken(user); 
 
     logger.info(`User ${user.username} logged in successfully.`);
     return { user, accessToken, refreshToken }; // Return tokens
@@ -98,21 +92,16 @@ export const loginUser = async (
   }
 };
 
-// Get all users (for admin/monitoring purposes)
 export const getAllUsers = async (): Promise<IUser[]> => {
-  // Senior insight: Only fetch active users by default.
-  // In a real app, this would likely be an admin-only endpoint.
   const users = await User.find({ isActive: true }).populate(
     "households",
     "name",
-  ); // Only populate household name
+  );
   logger.info(`Fetched ${users.length} active users.`);
   return users;
 };
 
-// Get a single user by ID
 export const getUserById = async (userId: string): Promise<IUser> => {
-  // Senior insight: Ensure user is active.
   const user = await User.findOne({ _id: userId, isActive: true }).populate(
     "households",
     "name",
@@ -124,26 +113,21 @@ export const getUserById = async (userId: string): Promise<IUser> => {
   return user;
 };
 
-// Update a user's profile
 export const updateUser = async (
   userId: string,
   updateData: Partial<IUser>,
 ): Promise<IUser> => {
   try {
-    // Senior insight: Prevent sensitive fields from being updated directly via this endpoint
-    // like password (which has its own dedicated flow) or _id.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _password, ...safeUpdateData } = updateData;
-
-    // Check if new email/username already exists for another active user
     if (safeUpdateData.email || safeUpdateData.username) {
       const existingUser = await User.findOne({
         $or: [
           { email: safeUpdateData.email },
           { username: safeUpdateData.username },
         ],
-        _id: { $ne: userId }, // Exclude current user
-        isActive: true, // Only check against active users
+        _id: { $ne: userId }, 
+        isActive: true,
       });
       if (existingUser) {
         throw new CustomError(
@@ -153,12 +137,9 @@ export const updateUser = async (
       }
     }
 
-    // Find and update the user. useFindAndModify is deprecated, so use findOneAndUpdate.
-    // { new: true } returns the updated document.
-    // { runValidators: true } ensures schema validation runs on update.
     const user = await User.findOneAndUpdate(
-      { _id: userId, isActive: true }, // Ensure we only update active users
-      { $set: safeUpdateData }, // Use $set to update specific fields
+      { _id: userId, isActive: true }, 
+      { $set: safeUpdateData },
       { new: true, runValidators: true },
     );
 
@@ -184,13 +165,11 @@ export const updateUser = async (
   }
 };
 
-// "Delete" a user (soft delete)
+
 export const deleteUser = async (userId: string): Promise<void> => {
-  // Senior insight: Always consider consequences of deletion.
-  // Soft delete is preferred. For hard delete, manage related data (households, devices, etc.).
   const user = await User.findOneAndUpdate(
     { _id: userId, isActive: true },
-    { $set: { isActive: false } }, // Perform soft delete
+    { $set: { isActive: false } },
     { new: true },
   );
 
@@ -199,11 +178,5 @@ export const deleteUser = async (userId: string): Promise<void> => {
   }
   logger.info(`User with ID: ${userId} soft-deleted.`);
 
-  // Senior insight: In a real system, soft-deleting a user might trigger:
-  // 1. Removing them from all households (or setting their role to inactive)
-  // 2. Transferring ownership of households if they were an owner
-  // 3. Deactivating/transferring ownership of their devices
-  // 4. Archiving their data for compliance/analytics
-  // For now, we only soft-delete the user document itself.
 };
 export { generateAccessToken };

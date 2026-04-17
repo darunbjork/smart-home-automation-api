@@ -1,4 +1,3 @@
-// src/config/env.ts
 import { config as load } from "dotenv-flow";
 load({ silent: true });
 
@@ -33,5 +32,5 @@ export const env = {
   JWT_REFRESH_SECRET: requireEnv("JWT_REFRESH_SECRET"),
   ACCESS_TOKEN_EXPIRES_IN: requireEnv("ACCESS_TOKEN_EXPIRES_IN"),
   REFRESH_TOKEN_EXPIRES_IN: requireEnv("REFRESH_TOKEN_EXPIRES_IN"),
-  FRONTEND_URL: requireEnv("FRONTEND_URL"),  // ✅ add this line
+  FRONTEND_URL: requireEnv("FRONTEND_URL"), 
 } as const;

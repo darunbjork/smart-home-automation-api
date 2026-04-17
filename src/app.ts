@@ -16,6 +16,7 @@ import { CustomError } from "./middleware/error.middleware";
 const app: Application = express();
 
 app.use(helmet());
+
 app.use(
   cors({
     origin: env.NODE_ENV === "development"
@@ -50,14 +51,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// --- Documentation Route (NEW) ---
+// --- Documentation Route ---
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // --- Routes ---
 app.use("/", healthRoutes);
 app.use("/users", userRoutes);
 app.use("/devices", deviceRoutes);
-app.use("/households", householdRoutes); // NEW: Add household routes
+app.use("/households", householdRoutes);
 
 // Define Swagger/OpenAPI schemas and responses...
 /**

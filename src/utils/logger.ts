@@ -1,13 +1,12 @@
-// smart-home-automation-api/src/utils/logger.ts
 import pino from "pino";
 import { env } from "../config/env";
 
 const logger = pino({
-  level: env.LOG_LEVEL || "info", // Set the log level from env, default to 'info'
+  level: env.LOG_LEVEL || "info",
   formatters: {
-    level: (label) => ({ level: label }), // Format level for consistency
+    level: (label) => ({ level: label }),
   },
-  // Use pino-pretty in development for readable logs
+
   transport:
     env.NODE_ENV === "development"
       ? {
@@ -17,7 +16,7 @@ const logger = pino({
             ignore: "pid,hostname",
           },
         }
-      : undefined, // In production, don't use a transport so it logs raw JSON
+      : undefined,
 });
 
 export default logger;
