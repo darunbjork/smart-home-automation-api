@@ -104,13 +104,25 @@ export const registerUser = async (
       password,
       householdName,
     );
+    // If user is created successfully, send 201
     res.status(201).json({
       message: "User registered successfully and household created.",
       user: prepareUserResponse(user),
     });
   } catch (error) {
     logger.error({ error }, "Error registering user.");
-    next(error);
+    // Check if the error is a CustomError with a specific status code we want to honor directly
+    if (error instanceof CustomError && error.statusCode) {
+      // If it's a known error like 409 (conflict) or 400 (bad request), send that status directly
+      res.status(error.statusCode).json({
+        error: {
+          message: error.message,
+        },
+      });
+    } else {
+      // For other errors, pass to the general error handler
+      next(error);
+    }
   }
 };
 
