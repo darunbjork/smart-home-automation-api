@@ -13,19 +13,23 @@ interface GeminiResponse {
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
+// Ensure the API key is set before proceeding
 if (!GEMINI_API_KEY) {
   console.error("GEMINI_API_KEY is missing. Please set it in your .env file.");
 }
 
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+// Updated model name to gemini-1.5-pro as suggested for potential 404 errors.
+// If this still fails, consider trying 'gemini-pro'.
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
 
-
+// Helper function to parse the AI response.
+// It extracts the JSON array of actions from the AI's text output.
 const parseActions = (responseText: string): any[] => {
   console.warn("Parsing AI response text. Expecting JSON array of actions.");
-  const jsonMatch = responseText.match(/\[.*\]/s);
+  const jsonMatch = responseText.match(/\[.*\]/s); // Regex to extract JSON array
   if (!jsonMatch) {
     console.error("AI response did not contain a valid JSON array.");
-    return []; 
+    return []; // Return empty array if no JSON array is found
   }
 
   try {
@@ -35,27 +39,29 @@ const parseActions = (responseText: string): any[] => {
       console.error("Parsed JSON is not an array.");
       return [];
     }
+    // Further validation could be added here to check action structure
     return actions;
   } catch (e) {
     console.error("Failed to parse AI response JSON:", e);
-    return []; 
+    return []; // Return empty array if JSON parsing fails
   }
 };
 
 export const processAICommand = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { prompt, devices } = req.body;
-    const user = req.user; 
+    const user = req.user; // Authenticated user info from middleware
 
     // Double-check API key availability at runtime for safety
     if (!GEMINI_API_KEY) {
         throw new CustomError("AI service is not configured. GEMINI_API_KEY is missing.", 500);
     }
 
-    const deviceContext = devices.map((d: any) => ({ 
+    // Prepare context for the AI, including user details and device states
+    const deviceContext = devices.map((d: any) => ({ // Type 'any' for devices is a placeholder, assuming it matches structure.
       id: d._id,
       name: d.name,
-      status: d.data?.on ? "on" : "off", 
+      status: d.data?.on ? "on" : "off", // Determine status from 'data.on' property
     }));
 
     // Construct a detailed system instruction for the AI
@@ -80,13 +86,12 @@ export const processAICommand = async (req: Request, res: Response, next: NextFu
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Gemini API error response:", errorText);
-      // Provide a more informative error based on API response if possible
       throw new CustomError(`AI service unavailable or returned an error: ${response.status} ${response.statusText}`, 503);
     }
 
     // Parse the successful response with the defined type
     const data = response.json() as Promise<GeminiResponse>;
-    const typedData = await data;
+    const typedData = await data; 
 
     // Extract the AI's generated text content safely
     let aiResponseText = "";
