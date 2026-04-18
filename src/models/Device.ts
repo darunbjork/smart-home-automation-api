@@ -1,15 +1,13 @@
-// smart-home-automation-api/src/models/Device.ts
 import { Schema, model, Document, Types } from "mongoose";
 
-// Define the interface for the Device document
 export interface IDevice extends Document {
   _id: Types.ObjectId;
   name: string;
   type: string; // e.g., 'light', 'thermostat', 'sensor'
   status: "online" | "offline" | "unknown" | "pending";
-  household: Types.ObjectId; // A reference to the household it belongs to
-  owner: Types.ObjectId; // A reference to the user who initially created it
-  data: Record<string, unknown>; // Flexible field to store device-specific data
+  household: Types.ObjectId; 
+  owner: Types.ObjectId; 
+  data: Record<string, unknown>; 
   createdAt: Date;
   updatedAt: Date;
 }

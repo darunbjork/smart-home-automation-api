@@ -1,12 +1,9 @@
-// smart-home-automation-api/src/models/RefreshToken.ts
 import { Schema, model, Types, Document } from "mongoose";
-
-// Define interface for RefreshToken document
 export interface IRefreshToken extends Document {
   _id: Types.ObjectId;
-  userId: Types.ObjectId; // Reference to the User who owns this token
-  token: string; // The actual refresh token string
-  expiresAt: Date; // When the token expires
+  userId: Types.ObjectId; 
+  token: string; 
+  expiresAt: Date; 
   createdAt: Date;
   updatedAt: Date;
 }

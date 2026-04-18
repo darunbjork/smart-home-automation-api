@@ -1,17 +1,13 @@
-// smart-home-automation-api/src/services/auth.service.ts
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import { IUser } from "../types/user.d";
 import RefreshToken from "../models/RefreshToken";
 import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
-import User from "../models/User"; // Added this import
-
-// Interface for JWT payload
+import User from "../models/User";
 export interface JwtPayload {
   userId: string;
   role: string;
-  // Add other necessary user info for authorization without hitting DB
 }
 
 // Generate Access Token
@@ -30,8 +26,7 @@ export const generateRefreshToken = async (user: IUser): Promise<string> => {
   const payload = {
     userId: user._id.toHexString(),
   };
-  // Senior Insight: Refresh token should typically be a longer, more random string
-  // and stored securely. Here, we use a JWT for simplicity and consistency with access tokens.
+
   const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, {
     expiresIn: env.REFRESH_TOKEN_EXPIRES_IN as jwt.SignOptions["expiresIn"],
   });

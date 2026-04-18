@@ -1,15 +1,12 @@
-// smart-home-automation-api/src/models/Household.ts
 import { Schema, model, Document, Types } from "mongoose";
 import { IUser } from "../types/user.d";
-import { IDevice } from "./Device"; // NEW: Import Device interface
-
-// Update the interface to include devices
+import { IDevice } from "./Device"; 
 export interface IHousehold extends Document {
   _id: Types.ObjectId;
   name: string;
   owner: Types.ObjectId;
   members: Types.ObjectId[] | IUser[];
-  devices: Types.ObjectId[] | IDevice[]; // NEW: An array of devices
+  devices: Types.ObjectId[] | IDevice[]; 
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,7 +16,6 @@ const HouseholdSchema = new Schema<IHousehold>(
     name: {
       type: String,
       required: [true, "Household name is required"],
-      unique: true,
       trim: true,
     },
     owner: {
@@ -34,7 +30,6 @@ const HouseholdSchema = new Schema<IHousehold>(
       },
     ],
     devices: [
-      // NEW: Add devices array
       {
         type: Schema.Types.ObjectId,
         ref: "Device",

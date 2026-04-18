@@ -1,4 +1,3 @@
-// smart-home-automation-api/src/types/user.d.ts
 import { Document, Types } from "mongoose";
 
 export interface IHousehold extends Document {
@@ -8,7 +7,7 @@ export interface IHousehold extends Document {
   members: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
-  __v?: number; // Added for Mongoose version key
+  __v?: number; 
 }
 
 export interface IUser extends Document {
@@ -20,7 +19,7 @@ export interface IUser extends Document {
   role: "owner" | "member";
   createdAt: Date;
   updatedAt: Date;
-  isActive: boolean; // NEW: For soft deletion
+  isActive: boolean;
 
   comparePassword(candidatePassword: string): Promise<boolean>;
 }

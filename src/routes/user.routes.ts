@@ -6,15 +6,15 @@ import {
   validateLoginUser,
   validateUpdateUser,
 } from "../middleware/validation.middleware";
-import { authenticate, authorize } from "../middleware/auth.middleware"; // NEW: Import auth middleware
+import { authenticate, authorize } from "../middleware/auth.middleware"; 
 
 const router = Router();
 
 // Authentication Routes
 router.post("/register", validateRegisterUser, userController.registerUser);
 router.post("/login", validateLoginUser, userController.loginUser);
-router.get("/refresh", userController.refreshAccessToken); // New endpoint for token refresh
-router.post("/logout", userController.logoutUser); // New endpoint for logout
+router.get("/refresh", userController.refreshAccessToken);
+router.post("/logout", userController.logoutUser); 
 
 // User Management Routes (now protected)
 /**

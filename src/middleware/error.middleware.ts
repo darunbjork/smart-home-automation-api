@@ -1,12 +1,9 @@
-// smart-home-automation-api/src/middleware/error.middleware.ts
-// Define a custom error class for controlled API error responses
 export class CustomError extends Error {
   statusCode: number;
 
   constructor(message: string, statusCode: number = 500) {
     super(message);
     this.statusCode = statusCode;
-    // Ensure the prototype chain is correctly set for instanceof checks
     Object.setPrototypeOf(this, CustomError.prototype);
   }
 }
@@ -19,8 +16,6 @@ function isErrorWithStatus(error: unknown): error is ErrorWithStatus {
   return typeof error === "object" && error !== null && "status" in error;
 }
 
-// Our global error handler (already defined in app.ts but useful to have it here too for context)
-// This will catch any errors passed to next() or thrown in async routes
 import { Request, Response, NextFunction } from "express";
 import { env } from "../config/env";
 import logger from "../utils/logger";
