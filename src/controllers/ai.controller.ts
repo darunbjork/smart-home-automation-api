@@ -20,9 +20,9 @@ if (!GEMINI_API_KEY) {
   console.error("GEMINI_API_KEY is missing. Please set it in your .env file.");
 }
 
-// Updated model name to gemini-1.0-pro as suggested for potential 404 errors.
-// If this still fails, consider trying 'gemini-1.5-flash-latest' or 'gemini-1.5-pro-latest'.
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${GEMINI_API_KEY}`;
+// Updated model name to gemini-2.5-flash as suggested for potential 404 errors.
+// If this still fails, try 'gemini-2.5-pro'.
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // Helper function to parse the AI response.
 // It extracts the JSON array of actions from the AI's text output.
