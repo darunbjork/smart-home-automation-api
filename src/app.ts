@@ -7,8 +7,9 @@ import healthRoutes from "./routes/health.routes";
 import userRoutes from "./routes/user.routes";
 import deviceRoutes from "./routes/device.routes";
 import householdRoutes from "./routes/household.routes";
-import swaggerUi from "swagger-ui-express"; 
-import swaggerSpec from "./config/swagger"; 
+import aiRoutes from "./routes/ai.routes";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./config/swagger";
 import { env } from "./config/env";
 import logger from "./utils/logger";
 import { CustomError } from "./middleware/error.middleware";
@@ -27,23 +28,16 @@ app.use(
   })
 );
 
-// Only apply rate limiting in production
-if (env.NODE_ENV === "production") {
-  const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    message: "Too many requests...",
-  });
-  app.use(apiLimiter);
-}
-
+// Rate limiting for API requests
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   message: "Too many requests from this IP, please try again after 15 minutes",
-  standardHeaders: true,
-  legacyHeaders: false,
 });
+
+// Apply rate limiting to all requests in production
 if (env.NODE_ENV === "production") {
   app.use(apiLimiter);
 }
@@ -60,6 +54,7 @@ app.use("/", healthRoutes);
 app.use("/users", userRoutes);
 app.use("/devices", deviceRoutes);
 app.use("/households", householdRoutes);
+app.use("/ai", aiRoutes); // Add the AI routes
 
 // Define Swagger/OpenAPI schemas and responses...
 /**
