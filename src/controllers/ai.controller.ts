@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { CustomError } from "../middleware/error.middleware";
 
+// Interface to define the expected structure of the Gemini API response
 interface GeminiResponse {
   candidates?: Array<{
     content: {
@@ -9,6 +10,7 @@ interface GeminiResponse {
       }>;
     };
   }>;
+  // Add other fields if necessary, e.g., promptFeedback, usageMetadata
 }
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -18,9 +20,9 @@ if (!GEMINI_API_KEY) {
   console.error("GEMINI_API_KEY is missing. Please set it in your .env file.");
 }
 
-// Updated model name to gemini-1.5-pro as suggested for potential 404 errors.
-// If this still fails, consider trying 'gemini-pro'.
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+// Updated model name to gemini-1.0-pro as suggested for potential 404 errors.
+// If this still fails, consider trying 'gemini-1.5-flash-latest' or 'gemini-1.5-pro-latest'.
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${GEMINI_API_KEY}`;
 
 // Helper function to parse the AI response.
 // It extracts the JSON array of actions from the AI's text output.
@@ -86,12 +88,13 @@ export const processAICommand = async (req: Request, res: Response, next: NextFu
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Gemini API error response:", errorText);
+      // Provide a more informative error based on API response if possible
       throw new CustomError(`AI service unavailable or returned an error: ${response.status} ${response.statusText}`, 503);
     }
 
     // Parse the successful response with the defined type
     const data = response.json() as Promise<GeminiResponse>;
-    const typedData = await data; 
+    const typedData = await data; // Await the promise to get the typed data
 
     // Extract the AI's generated text content safely
     let aiResponseText = "";
