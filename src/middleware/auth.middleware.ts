@@ -1,15 +1,12 @@
-// smart-home-automation-api/src/middleware/auth.middleware.ts
 import { Request, Response, NextFunction } from "express";
 import { CustomError } from "./error.middleware";
-import { verifyAccessToken, JwtPayload } from "../services/auth.service"; // Import token verification
+import { verifyAccessToken, JwtPayload } from "../services/auth.service";
 import logger from "../utils/logger";
-
-// Extend the Request object to include a 'user' property
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      user?: JwtPayload; // Add user property to Request object
+      user?: JwtPayload;
     }
   }
 }
@@ -20,31 +17,28 @@ export const authenticate = (
   res: Response,
   next: NextFunction,
 ) => {
-  // Senior Insight: Tokens are typically sent in the Authorization header as a Bearer token.
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw new CustomError("No access token provided or malformed.", 401);
   }
 
-  const token = authHeader.split(" ")[1]; // Extract the token string
+  const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = verifyAccessToken(token); // Verify the token
-    req.user = decoded; // Attach decoded user info to the request object
+    const decoded = verifyAccessToken(token); 
+    req.user = decoded;
     logger.debug(`User ${decoded.userId} authenticated.`);
-    next(); // Proceed to the next middleware/route handler
+    next(); 
   } catch (error) {
     logger.warn({ error }, "Authentication failed.");
-    next(error); // Pass error to global error handler
+    next(error);
   }
 };
 
 // Authorization Middleware (Role-Based Access Control)
 export const authorize = (roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    // Senior Insight: Authorization depends on successful authentication first.
     if (!req.user) {
-      // This should ideally not happen if 'authenticate' middleware runs before 'authorize'
       throw new CustomError(
         "Unauthorized: User information not available.",
         401,

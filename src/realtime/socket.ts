@@ -1,4 +1,3 @@
-// smart-home-automation-api/src/realtime/socket.ts
 import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import { Types } from "mongoose";

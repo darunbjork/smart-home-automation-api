@@ -1,10 +1,4 @@
-// smart-home-automation-api/src/middleware/validation.middleware.ts
-import {
-  validationResult,
-  body,
-  param,
-  ValidationError,
-} from "express-validator";
+import { validationResult, body, param, ValidationError } from "express-validator";
 import { Request, Response, NextFunction } from "express";
 import { CustomError } from "./error.middleware";
 
@@ -16,8 +10,6 @@ export const validateRequest = (
 ) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    // Senior insight: Consolidated error messages are better for clients.
-    // Return a 400 Bad Request with specific validation errors.
     throw new CustomError(
       "Validation failed: " +
         errors
@@ -51,7 +43,7 @@ export const validateRegisterUser = [
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters long"),
   body("householdName").notEmpty().withMessage("Household name is required"),
-  validateRequest, // Apply our custom validation checker
+  validateRequest,
 ];
 
 // Validation rules for user login

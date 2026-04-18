@@ -50,7 +50,6 @@ const prepareUserResponse = (user: IUser) => {
         } = householdObj;
         return householdClean;
       }
-      // If h is not a populated IHousehold document (e.g., it's just an ObjectId), return it as is.
       return h;
     });
   }
@@ -59,18 +58,14 @@ const prepareUserResponse = (user: IUser) => {
 
 // Set refresh token as HttpOnly cookie
 const setRefreshTokenCookie = (res: Response, refreshToken: string) => {
-  // Senior Insight: HttpOnly cookies are crucial for refresh tokens to mitigate XSS attacks.
-  // Secure: true for HTTPS only. SameSite: 'strict' or 'lax' for CSRF protection.
-  // In production, domain should be specific.
   res.cookie("jwt", refreshToken, {
-    httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
-    secure: env.NODE_ENV === "production", // Only send over HTTPS in production
-    sameSite: "strict", // Protects against CSRF attacks
-    maxAge: _getExpiresInMilliseconds(env.REFRESH_TOKEN_EXPIRES_IN), // Match token expiry
+    httpOnly: true, 
+    secure: env.NODE_ENV === "production", 
+    sameSite: "strict", 
+    maxAge: _getExpiresInMilliseconds(env.REFRESH_TOKEN_EXPIRES_IN),
   });
 };
 
-// Helper to convert expiration string to milliseconds (could be moved to utils)
 const _getExpiresInMilliseconds = (expiresIn: string): number => {
   const value = parseInt(expiresIn.slice(0, -1));
   const unit = expiresIn.slice(-1);
@@ -111,16 +106,13 @@ export const registerUser = async (
     });
   } catch (error) {
     logger.error({ error }, "Error registering user.");
-    // Check if the error is a CustomError with a specific status code we want to honor directly
     if (error instanceof CustomError && error.statusCode) {
-      // If it's a known error like 409 (conflict) or 400 (bad request), send that status directly
       res.status(error.statusCode).json({
         error: {
           message: error.message,
         },
       });
     } else {
-      // For other errors, pass to the general error handler
       next(error);
     }
   }
@@ -139,9 +131,7 @@ export const loginUser = async (
       password,
     );
 
-    setRefreshTokenCookie(res, refreshToken); // Set HttpOnly refresh token cookie
-
-    // Send access token in the response body (or header)
+    setRefreshTokenCookie(res, refreshToken);
     res.status(200).json({
       message: "Login successful.",
       user: prepareUserResponse(user),
@@ -160,7 +150,6 @@ export const refreshAccessToken = async (
   next: NextFunction,
 ) => {
   try {
-    // Senior Insight: Refresh token is read from HttpOnly cookie.
     const cookies = req.cookies;
     if (!cookies?.jwt) {
       throw new CustomError("No refresh token found in cookies.", 401);
@@ -173,11 +162,7 @@ export const refreshAccessToken = async (
       userId,
       role,
     } = await authService.verifyAndRotateRefreshToken(refreshToken);
-
-    // Set the new refresh token as a new HttpOnly cookie
     setRefreshTokenCookie(res, newRefreshToken);
-
-    // Send the new access token to the client
     res.status(200).json({
       message: "Access token refreshed successfully.",
       accessToken,
@@ -198,10 +183,9 @@ export const logoutUser = async (
   try {
     const cookies = req.cookies;
     if (!cookies?.jwt) {
-      // No refresh token to invalidate, simply return success (idempotent logout)
       return res
         .status(204)
-        .json({ message: "No refresh token to invalidate." }); // 204 No Content
+        .json({ message: "No refresh token to invalidate." }); 
     }
     const refreshToken = cookies.jwt;
 
@@ -214,7 +198,7 @@ export const logoutUser = async (
       sameSite: "strict",
     });
 
-    res.status(204).send(); // 204 No Content for successful logout
+    res.status(204).send();
   } catch (error) {
     logger.error({ error }, "Error logging out user.");
     next(error);
@@ -228,7 +212,6 @@ export const getAllUsers = async (
   next: NextFunction,
 ) => {
   try {
-    // Senior Insight: req.user is populated by authenticate middleware.
     logger.debug(
       `Fetching all users for user ${req.user?.userId} (role: ${req.user?.role})`,
     );
@@ -251,8 +234,6 @@ export const getUserById = async (
       `Fetching user ${req.params.id} for user ${req.user?.userId} (role: ${req.user?.role})`,
     );
     const user = await userService.getUserById(req.params.id);
-
-    // Senior Insight: Authorization check - users can only view their own profile unless they are an owner.
     if (req.user?.role !== "owner" && req.user?.userId !== req.params.id) {
       throw new CustomError(
         "Forbidden: You can only view your own profile unless you are an owner.",
@@ -267,7 +248,6 @@ export const getUserById = async (
   }
 };
 
-// Update a user's profile
 export const updateUser = async (
   req: Request,
   res: Response,
@@ -278,7 +258,6 @@ export const updateUser = async (
       `Updating user ${req.params.id} for user ${req.user?.userId} (role: ${req.user?.role})`,
     );
 
-    // Senior Insight: Authorization check - users can only update their own profile unless they are an owner.
     if (req.user?.role !== "owner" && req.user?.userId !== req.params.id) {
       throw new CustomError(
         "Forbidden: You can only update your own profile unless you are an owner.",
@@ -308,7 +287,6 @@ export const deleteUser = async (
       `Attempting to soft-delete user ${req.params.id} by user ${req.user?.userId} (role: ${req.user?.role})`,
     );
 
-    // Senior Insight: Strong authorization - typically only owners/admins can delete users.
     if (req.user?.role !== "owner") {
       throw new CustomError(
         "Forbidden: Only an owner can soft-delete user accounts.",
