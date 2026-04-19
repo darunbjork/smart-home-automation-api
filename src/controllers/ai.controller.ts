@@ -73,6 +73,7 @@ Rules:
 - Return ONLY a JSON array. No extra text.
 - Use the exact "id" from the list.
 - Do not invent IDs like "all-lights". For "all lights", return one action per light device.
+- Treat concatenated words in the user request as separate words to improve matching with device names.
 
 Now respond with JSON array:
 `;
@@ -97,11 +98,11 @@ Now respond with JSON array:
     let aiResponseText = "";
     if (typedData.candidates && typedData.candidates.length > 0 && typedData.candidates[0].content && typedData.candidates[0].content.parts && typedData.candidates[0].content.parts.length > 0 && typedData.candidates[0].content.parts[0].text) {
       aiResponseText = typedData.candidates[0].content.parts[0].text;
-    console.log("Raw AI response:", aiResponseText);
     } else {
       console.error("Unexpected response structure from Gemini API:", typedData);
       throw new CustomError("Failed to parse AI response structure.", 500);
     }
+     console.log("Raw AI response:", aiResponseText);
 
     const actions = parseActions(aiResponseText);
 
