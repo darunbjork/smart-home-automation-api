@@ -56,16 +56,26 @@ export const processAICommand = async (req: Request, res: Response, next: NextFu
     }));
 
     const systemInstruction = `
-      Current Home State: ${JSON.stringify(deviceContext)}
-      User Input: "${prompt}"
-      Requirement: Generate a JSON array of actions.
-      Rules:
-      - Each action's "id" MUST exactly match one of the "id" fields in the Current Home State.
-      - Do NOT use generic IDs like "all-lights", "everything", or any word not in the list.
-      - If the user asks to turn off all lights, return one action per light device.
-      - Format: [{"id": string, "action": "on" | "off"}]
-      - Only return the JSON array. No explanations.
-    `;
+You are a smart home assistant. You will be given a list of current devices (id, name, type, status).
+Convert the user's request into a JSON array of actions.
+
+Current devices:
+${JSON.stringify(deviceContext, null, 2)}
+
+User request: "${prompt}"
+
+Examples:
+- If devices = [{"id": "123", "name": "Living Room Light", "type": "light", "status": "on"}]
+  and user says "turn off living room light" → [{"id": "123", "action": "off"}]
+- If devices = [] → return [] (no devices)
+
+Rules:
+- Return ONLY a JSON array. No extra text.
+- Use the exact "id" from the list.
+- Do not invent IDs like "all-lights". For "all lights", return one action per light device.
+
+Now respond with JSON array:
+`;
 
     const response = await fetch(GEMINI_API_URL, {
       method: "POST",
@@ -87,6 +97,7 @@ export const processAICommand = async (req: Request, res: Response, next: NextFu
     let aiResponseText = "";
     if (typedData.candidates && typedData.candidates.length > 0 && typedData.candidates[0].content && typedData.candidates[0].content.parts && typedData.candidates[0].content.parts.length > 0 && typedData.candidates[0].content.parts[0].text) {
       aiResponseText = typedData.candidates[0].content.parts[0].text;
+    console.log("Raw AI response:", aiResponseText);
     } else {
       console.error("Unexpected response structure from Gemini API:", typedData);
       throw new CustomError("Failed to parse AI response structure.", 500);
