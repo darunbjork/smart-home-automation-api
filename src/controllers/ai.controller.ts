@@ -17,25 +17,17 @@ if (!GEMINI_API_KEY) {
   console.error("GEMINI_API_KEY is missing. Please set it in your .env file.");
 }
 
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 const parseActions = (responseText: string): any[] => {
-  console.warn("Parsing AI response text. Expecting JSON array of actions.");
-  const jsonMatch = responseText.match(/\[.*\]/s); 
-  if (!jsonMatch) {
-    console.error("AI response did not contain a valid JSON array.");
-    return [];
-  }
+  const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) return [];
 
   try {
-    const actions = JSON.parse(jsonMatch[0]);
-    if (!Array.isArray(actions)) {
-      console.error("Parsed JSON is not an array.");
-      return [];
-    }
-    return actions;
+    const parsed = JSON.parse(jsonMatch[0]);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (e) {
-    console.error("Failed to parse AI response JSON:", e);
+    console.error("JSON parse failed:", e);
     return [];
   }
 };
