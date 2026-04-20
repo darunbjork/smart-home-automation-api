@@ -1,7 +1,7 @@
 import request from "supertest";
 import app from "../app";
-import { connect, disconnect } from "mongoose"; // Added import
-import { MongoMemoryReplSet } from "mongodb-memory-server"; // Added import
+import { connect, disconnect } from "mongoose"; 
+import { MongoMemoryReplSet } from "mongodb-memory-server";
 import User from "../models/User";
 import Household from "../models/Household";
 
@@ -9,7 +9,7 @@ declare global {
   var __MONGOD__: MongoMemoryReplSet;
 }
 
-jest.setTimeout(30000); // Increase timeout for this test suite
+jest.setTimeout(30000);
 
 describe("User Authentication and Household Management", () => {
   beforeAll(async () => {
@@ -30,10 +30,6 @@ describe("User Authentication and Household Management", () => {
     }
   });
 
-  // afterAll(async () => { // This block is removed
-  //   await mongoose.disconnect();
-  //   await mongoServer.stop();
-  // });
 
   it("should register a new user and create a household successfully", async () => {
     const res = await request(app).post("/users/register").send({
@@ -57,7 +53,7 @@ describe("User Authentication and Household Management", () => {
     expect(userInDb).not.toBeNull();
     expect(userInDb?.username).toEqual("testuser");
     expect(userInDb?.email).toEqual("test@example.com");
-    expect(userInDb?.password).not.toEqual("password123"); // Password should be hashed
+    expect(userInDb?.password).not.toEqual("password123");
 
     const householdInDb = await Household.findById(res.body.user.households[0]);
     expect(householdInDb).not.toBeNull();
@@ -67,7 +63,6 @@ describe("User Authentication and Household Management", () => {
   });
 
   it("should not register a user with duplicate username or email", async () => {
-    // First registration (successful)
     await request(app).post("/users/register").send({
       username: "duplicateuser",
       email: "duplicate@example.com",
@@ -75,28 +70,25 @@ describe("User Authentication and Household Management", () => {
       householdName: "Duplicate Household",
     });
 
-    // Second registration attempt with duplicate username
     const res1 = await request(app).post("/users/register").send({
-      username: "duplicateuser", // Duplicate username
-      email: "another@example.com", // NEW email
+      username: "duplicateuser", 
+      email: "another@example.com", 
       password: "password123",
       householdName: "Another Household",
     });
     expect(res1.statusCode).toEqual(409);
-    // UPDATED ASSERTION: Match the specific error message thrown by the service for duplicate username
+   
     expect(res1.body.error.message).toEqual(
       "A user with this username already exists.", 
     );
 
-    // Third registration attempt with unique username but duplicate email
     const res2 = await request(app).post("/users/register").send({
       username: "uniqueuser",
-      email: "duplicate@example.com", // Duplicate email
+      email: "duplicate@example.com", 
       password: "password123",
       householdName: "Unique Household",
     });
     expect(res2.statusCode).toEqual(409);
-    // This assertion for duplicate email should still be correct
     expect(res2.body.error.message).toEqual(
       "A user with this email already exists.",
     );
@@ -123,7 +115,6 @@ describe("User Authentication and Household Management", () => {
   });
 
   it("should not log in with invalid credentials", async () => {
-    // Try to login without registering first
     const res1 = await request(app).post("/users/login").send({
       email: "nonexistent@example.com",
       password: "wrongpassword",
@@ -132,7 +123,6 @@ describe("User Authentication and Household Management", () => {
     console.log(res1.body);
     expect(res1.body.error.message).toEqual("Invalid credentials.");
 
-    // Register a user
     await request(app).post("/users/register").send({
       username: "anotheruser",
       email: "another@example.com",
@@ -140,7 +130,6 @@ describe("User Authentication and Household Management", () => {
       householdName: "Another Household",
     });
 
-    // Try to login with wrong password
     const res2 = await request(app).post("/users/login").send({
       email: "another@example.com",
       password: "wrongpassword",
@@ -153,7 +142,6 @@ describe("User Authentication and Household Management", () => {
     const res = await request(app).post("/users/register").send({
       username: "incomplete",
       email: "incomplete@example.com",
-      // password and householdName are missing
     });
     expect(res.statusCode).toEqual(400);
     expect(res.body.error.message).toContain(
@@ -165,7 +153,6 @@ describe("User Authentication and Household Management", () => {
   it("should return 400 if required fields are missing for login", async () => {
     const res = await request(app).post("/users/login").send({
       email: "missing@example.com",
-      // password is missing
     });
     expect(res.statusCode).toEqual(400);
     expect(res.body.error.message).toEqual(

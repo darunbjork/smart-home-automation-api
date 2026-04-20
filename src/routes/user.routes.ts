@@ -1,4 +1,3 @@
-// smart-home-automation-api/src/routes/user.routes.ts
 import { Router } from "express";
 import * as userController from "../controllers/user.controller";
 import {
@@ -193,7 +192,6 @@ router.delete(
   authenticate,
   authorize(["owner"]),
   userController.deleteUser,
-); // Only owners can delete
-// Note: Owners cannot delete themselves is handled in controller for granular control.
+);
 
 export default router;
