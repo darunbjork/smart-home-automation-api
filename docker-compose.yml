@@ -1,7 +1,4 @@
-version: '3.8'
-
 services:
-  # This service runs our Node.js API
   api:
     container_name: smart-home-api
     build:
@@ -9,21 +6,20 @@ services:
       dockerfile: Dockerfile
     image: smart-home-api:v1.0.0
     ports:
-      - '3000:3000'
+      - "3000:3000"
     env_file:
-      - ./.env # This file will contain our environment variables
+      - ./.env
     depends_on:
       - mongo
-    
-  # This service runs our MongoDB database
+
   mongo:
     container_name: smart-home-db
     image: mongo:6.0
     restart: always
     ports:
-      - '27017:27017'
+      - "27017:27017"
     volumes:
       - mongo-data:/data/db
-    
+
 volumes:
   mongo-data:

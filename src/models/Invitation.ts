@@ -7,7 +7,7 @@ export interface IInvitation extends Document {
   household: Types.ObjectId;
   inviter: Types.ObjectId;
   inviteeEmail: string; // We invite by email, not by user ID
-  token: string; 
+  token: string;
   expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;

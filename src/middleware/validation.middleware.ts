@@ -1,4 +1,9 @@
-import { validationResult, body, param, ValidationError } from "express-validator";
+import {
+  validationResult,
+  body,
+  param,
+  ValidationError,
+} from "express-validator";
 import { Request, Response, NextFunction } from "express";
 import { CustomError } from "./error.middleware";
 
@@ -40,8 +45,8 @@ export const validateRegisterUser = [
   body("password")
     .notEmpty()
     .withMessage("Password cannot be empty")
-    .isLength({ min: 8 })
-    .withMessage("Password must be at least 8 characters long"),
+    .isLength({ min: 12, max: 128 })
+    .withMessage("Password must be at least 12 characters long"),
   body("householdName").notEmpty().withMessage("Household name is required"),
   validateRequest,
 ];
@@ -54,24 +59,8 @@ export const validateLoginUser = [
 ];
 
 // Validation rules for user update
-export const validateUpdateUser = [
-  body("username")
-    .optional() // Field is optional for update
-    .isLength({ min: 3, max: 30 })
-    .withMessage("Username must be between 3 and 30 characters")
-    .matches(/^[a-zA-Z0-9_]+$/)
-    .withMessage("Username can only contain letters, numbers, and underscores"),
-  body("email")
-    .optional()
-    .isEmail()
-    .withMessage("Please provide a valid email address")
-    .normalizeEmail(),
-  body("role")
-    .optional()
-    .isIn(["owner", "member"])
-    .withMessage('Role must be either "owner" or "member"'),
-  validateRequest,
-];
+// (replaced by the strict Zod schema `updateUserSchema` in user.routes.ts:
+//  only `username` may be sent to PATCH /users/:id)
 
 // Validation rules for device creation
 export const validateCreateDevice = [

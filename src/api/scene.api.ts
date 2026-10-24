@@ -1,12 +1,17 @@
+export interface Scene {
+  _id: string;
+  name: string;
+  active: boolean;
+}
+
 export const sceneApi = {
-  getByHousehold: async (householdId: string): Promise<any[]> => {
-    // Mock data until backend is built
-    return [{ _id: "1", name: "Movie Mode", active: false }]; 
+  getByHousehold: async (_householdId: string): Promise<Scene[]> => {
+    return [{ _id: "1", name: "Movie Mode", active: false }];
   },
-  activate: async (sceneId: string): Promise<void> => {
-    console.log(`Mock activated scene ${sceneId}`);
+  activate: async (_sceneId: string): Promise<void> => {
+    // Mock: no real scene engine yet.
   },
-  create: async (data: any): Promise<any> => {
-    return { ...data, _id: Date.now().toString() };
-  }
+  create: async (data: Record<string, unknown>): Promise<Scene> => {
+    return { ...data, _id: Date.now().toString() } as Scene;
+  },
 };

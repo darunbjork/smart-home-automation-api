@@ -10,10 +10,10 @@ Today, we focused on **Pillar 5: Scalable Service Design** by implementing a com
 
 The endpoints built (`/devices`, `/devices/:id`) will be the primary source of truth for the user's dashboard. Frontend components (`DeviceList`, `DeviceCard`, `DeviceControl`) can now:
 
-*   **Fetch a list of all devices** for the currently logged-in user's household.
-*   **Display a single device's status** and properties.
-*   **Send commands to update a device**, like turning a light on or off.
-*   **Delete a device** from the household.
+- **Fetch a list of all devices** for the currently logged-in user's household.
+- **Display a single device's status** and properties.
+- **Send commands to update a device**, like turning a light on or off.
+- **Delete a device** from the household.
 
 The multi-tenancy logic ensures the frontend doesn't need to worry about unauthorized device access, as the backend handles security and data filtering automatically.
 
@@ -48,14 +48,14 @@ By the end of today, we demonstrated:
 
 ## 🧪 Testing Strategy & Coverage
 
-*   **Unit Tests for `device.service.ts`**: Covered CRUD functions for success and failure, especially multi-tenancy checks.
-*   **Integration Tests for `device.routes.ts`**: Used `supertest` to verify endpoint behavior, including authentication, authorization, and validation.
+- **Unit Tests for `device.service.ts`**: Covered CRUD functions for success and failure, especially multi-tenancy checks.
+- **Integration Tests for `device.routes.ts`**: Used `supertest` to verify endpoint behavior, including authentication, authorization, and validation.
 
 ## 📊 Performance & Scaling Analysis
 
-*   **Multi-Tenancy Performance**: The `isUserInHousehold` check adds a single, efficient database query per device request, a reasonable trade-off for security. Caching could further reduce load for high-traffic scenarios.
-*   **Device Model Efficiency**: Indexes on `household` and `owner` ensure efficient queries.
-*   **`Schema.Types.Mixed` Performance**: Provides flexibility but shifts some validation responsibility to the API layer.
+- **Multi-Tenancy Performance**: The `isUserInHousehold` check adds a single, efficient database query per device request, a reasonable trade-off for security. Caching could further reduce load for high-traffic scenarios.
+- **Device Model Efficiency**: Indexes on `household` and `owner` ensure efficient queries.
+- **`Schema.Types.Mixed` Performance**: Provides flexibility but shifts some validation responsibility to the API layer.
 
 ## 🗂️ Git Commit Summary
 
@@ -77,28 +77,28 @@ Our containerized application now fully supports a core business function, provi
 
 Common issues encountered and resolved:
 
-*   `User not authenticated` (401 Unauthorized): Missing or invalid `Authorization` header.
-*   `User does not have access to this device` (403 Forbidden): Multi-tenancy logic correctly rejecting unauthorized requests.
-*   Mongoose validation errors: Invalid input data (e.g., `householdId` format).
-*   TypeScript compilation errors: Resolved syntax and type-related issues in `validation.middleware.ts`, `device.controller.ts`, and `device.service.ts`.
+- `User not authenticated` (401 Unauthorized): Missing or invalid `Authorization` header.
+- `User does not have access to this device` (403 Forbidden): Multi-tenancy logic correctly rejecting unauthorized requests.
+- Mongoose validation errors: Invalid input data (e.g., `householdId` format).
+- TypeScript compilation errors: Resolved syntax and type-related issues in `validation.middleware.ts`, `device.controller.ts`, and `device.service.ts`.
 
 ## 📈 Tomorrow's Growth Plan
 
 Tomorrow, we will expand on this foundation by implementing **Household and User Management**, including:
 
-*   Creating a `Household` service and controller.
-*   Building endpoints for `owner` to **invite users** to a household.
-*   Implementing logic for `member` to **accept or decline invitations**.
-*   Allowing users to **leave a household**.
+- Creating a `Household` service and controller.
+- Building endpoints for `owner` to **invite users** to a household.
+- Implementing logic for `member` to **accept or decline invitations**.
+- Allowing users to **leave a household**.
 
 ## 🧠 Senior Engineering Lessons
 
 Today, I learned the critical importance of designing with **multi-tenancy** in mind from the beginning. I saw how:
 
-*   **Data Isolation is not optional; it's a core security requirement.** The `isUserInHousehold` check is crucial for preventing unauthorized data access.
-*   **A well-structured service layer facilitates complex logic.** It allows for clean handling of multi-tenancy checks, keeping controllers lean.
-*   **Flexible Schemas are a trade-off.** `Schema.Types.Mixed` offers extensibility but requires careful API-level validation.
-*   **The API contract is paramount.** Clear endpoints and Swagger documentation are essential for usability and safety.
+- **Data Isolation is not optional; it's a core security requirement.** The `isUserInHousehold` check is crucial for preventing unauthorized data access.
+- **A well-structured service layer facilitates complex logic.** It allows for clean handling of multi-tenancy checks, keeping controllers lean.
+- **Flexible Schemas are a trade-off.** `Schema.Types.Mixed` offers extensibility but requires careful API-level validation.
+- **The API contract is paramount.** Clear endpoints and Swagger documentation are essential for usability and safety.
 
 ## 🎉 Confidence Boost
 
@@ -106,6 +106,6 @@ I am extremely confident now! I've built a full-fledged, multi-tenant API for ma
 
 ## 📚 Knowledge Gaps Identified
 
-*   Further understanding of `Schema.Types.Mixed` and rigorous runtime validation.
-*   Detailed implementation of the invitation flow for household management.
-*   Future exploration of real-time smart home systems (e.g., WebSockets for device status updates).
+- Further understanding of `Schema.Types.Mixed` and rigorous runtime validation.
+- Detailed implementation of the invitation flow for household management.
+- Future exploration of real-time smart home systems (e.g., WebSockets for device status updates).

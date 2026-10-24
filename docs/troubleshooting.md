@@ -9,8 +9,9 @@ When building the Docker image, the `npm run build` command fails with `sh: tsc:
 
 **Solution:**
 The `Dockerfile` was refactored to use a multi-stage build pattern:
-1.  **`builder` stage:** This stage installs *all* `npm` dependencies (including `devDependencies` like `typescript`) and performs the `npm run build` step.
-2.  **`production` stage:** This stage starts fresh, installs *only* production dependencies, and then copies the compiled JavaScript artifacts from the `builder` stage. This keeps the final production image lean.
+
+1.  **`builder` stage:** This stage installs _all_ `npm` dependencies (including `devDependencies` like `typescript`) and performs the `npm run build` step.
+2.  **`production` stage:** This stage starts fresh, installs _only_ production dependencies, and then copies the compiled JavaScript artifacts from the `builder` stage. This keeps the final production image lean.
 3.  **`development` stage:** This stage is specifically for local development, installing all dependencies and copying all source files for hot-reloading.
 
 **Relevant Dockerfile changes:**

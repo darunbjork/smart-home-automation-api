@@ -1,12 +1,21 @@
-import axios from 'axios'; 
+import axios from "axios";
 
 export const memberApi = {
-  getMembers: (householdId: string): Promise<any[]> =>
-    axios.get(`/households/${householdId}`).then((r: any) => r.data.members || []), 
+  getMembers: async (householdId: string): Promise<unknown[]> => {
+    const r = await axios.get<{ members?: unknown[] }>(
+      `/households/${householdId}`,
+    );
+    return r.data.members ?? [];
+  },
 
-  inviteMember: (householdId: string, email: string): Promise<any> =>
-    axios.post(`/households/invite`, { 
-      householdId: householdId, 
-      inviteeEmail: email 
-    }).then((r: any) => r.data)
+  inviteMember: async (
+    householdId: string,
+    email: string,
+  ): Promise<unknown> => {
+    const r = await axios.post(`/households/invite`, {
+      householdId: householdId,
+      inviteeEmail: email,
+    });
+    return r.data;
+  },
 };

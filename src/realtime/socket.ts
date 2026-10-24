@@ -1,88 +1,97 @@
 import { Server, Socket } from "socket.io";
-import jwt from "jsonwebtoken";
-import { Types } from "mongoose";
-import { env } from "../config/env";
-import logger from "../utils/logger";
 import User from "../models/User";
-import { IDevice } from "../models/Device";
+import logger from "../utils/logger";
+import { verifyAccessToken } from "../services/auth.service";
+import { listHouseholdIdsForUser } from "../services/access.service";
 
-interface AuthenticatedSocket extends Socket {
-  user: {
-    userId: Types.ObjectId;
-    email: string;
-    households: string[];
-  };
+export type DeviceEvent = "device:new" | "device:update" | "device:deleted";
+
+interface SocketData {
+  userId: string;
 }
 
-let io: Server;
+let io: Server | null = null;
 
-export const initializeSocketIo = (socketIoInstance: Server) => {
-  io = socketIoInstance;
+const householdRoom = (householdId: string): string =>
+  `household:${householdId}`;
+const userRoom = (userId: string): string => `user:${userId}`;
 
-  // Middleware to authenticate WebSocket connections
-  io.use(async (socket, next) => {
-    const token = socket.handshake.auth.token;
-    if (!token) {
-      return next(new Error("Authentication error: Token not provided."));
-    }
+export const initializeSocketIo = (instance: Server): void => {
+  io = instance;
 
+  io.use(async (socket: Socket, next) => {
     try {
-      const decoded = jwt.verify(token, env.JWT_SECRET) as {
-        userId: string;
-        role: string;
-      };
-      const user = await User.findById(decoded.userId).lean();
-      if (!user) {
-        return next(new Error("Authentication error: User not found."));
+      const token: unknown = socket.handshake.auth?.token;
+      if (typeof token !== "string" || token.length === 0) {
+        next(new Error("Authentication error: token not provided."));
+        return;
       }
+      const payload = verifyAccessToken(token);
+      const user = await User.findOne(
+        { _id: payload.userId, isActive: true },
+        "_id",
+      ).lean();
+      if (!user) {
+        next(new Error("Authentication error: user not found."));
+        return;
+      }
+      (socket.data as SocketData).userId = payload.userId;
 
-      // Senior Insight: Attach user data to the socket for later use
-      (socket as AuthenticatedSocket).user = {
-        userId: user._id,
-        email: user.email,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        households: user.households.map((id: any) => id.toString()),
-      };
-
+      // Drop the connection the moment the access token expires. The client
+      // refreshes and reconnects with the new token.
+      if (payload.exp !== undefined) {
+        const timer = setTimeout(
+          () => socket.disconnect(true),
+          Math.max(0, payload.exp * 1000 - Date.now()),
+        );
+        socket.once("disconnect", () => clearTimeout(timer));
+      }
       next();
     } catch (error) {
-      logger.error({ err: error }, "Socket authentication failed");
-      next(new Error("Authentication error: Invalid token."));
+      logger.warn({ err: error }, "Socket authentication failed.");
+      next(new Error("Authentication error: invalid token."));
     }
   });
 
-  io.on("connection", async (socket) => {
-    const user = (socket as AuthenticatedSocket).user;
-    logger.info(`User connected via socket: ${user.email}`);
-
-    // Senior Insight: Join the user to rooms for each of their households
-    user.households.forEach((householdId: string) => {
-      socket.join(householdId);
-      logger.debug(`User ${user.email} joined household room: ${householdId}`);
-    });
-
-    socket.on("disconnect", () => {
-      logger.info(`User disconnected via socket: ${user.email}`);
-    });
+  io.on("connection", async (socket: Socket) => {
+    const { userId } = socket.data as SocketData;
+    await socket.join(userRoom(userId));
+    // Membership is read from the households collection, not from a possibly
+    // stale user.households array.
+    const householdIds = await listHouseholdIdsForUser(userId);
+    await Promise.all(householdIds.map((id) => socket.join(householdRoom(id))));
+    logger.debug({ userId, rooms: householdIds.length }, "Socket connected.");
+    // The server accepts no client events: no socket.on(...) handlers on purpose.
   });
 };
 
-/**
- * Emits a real-time event to all members of a specific household.
- * @param eventName The name of the event (e.g., 'device:update').
- * @param householdId The ID of the household room to broadcast to.
- * @param data The payload to send with the event.
- */
-export const emitToHousehold = (
-  eventName: string,
-  householdId: Types.ObjectId,
-  data: IDevice,
-) => {
+export const emitToHousehold = <T>(
+  event: DeviceEvent,
+  householdId: { toString(): string },
+  payload: T,
+): void => {
   if (!io) {
-    logger.error("Socket.io not initialized.");
+    logger.error("Socket.io not initialised; event dropped.");
     return;
   }
-  // Senior Insight: Use the io.to() method to broadcast to a specific room
-  io.to(householdId.toString()).emit(eventName, data);
-  logger.debug(`Event '${eventName}' emitted to household ${householdId}`);
+  io.to(householdRoom(householdId.toString())).emit(event, payload);
+};
+
+// Call when membership changes so live sockets follow the database.
+export const addUserToHouseholdRoom = (
+  userId: string,
+  householdId: string,
+): void => {
+  io?.in(userRoom(userId)).socketsJoin(householdRoom(householdId));
+};
+
+export const removeUserFromHouseholdRoom = (
+  userId: string,
+  householdId: string,
+): void => {
+  io?.in(userRoom(userId)).socketsLeave(householdRoom(householdId));
+};
+
+export const closeHouseholdRoom = (householdId: string): void => {
+  io?.in(householdRoom(householdId)).socketsLeave(householdRoom(householdId));
 };

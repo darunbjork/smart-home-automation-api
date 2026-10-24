@@ -33,7 +33,7 @@ The `Invitation` model was introduced to store information about pending invitat
 
 ```typescript
 // src/models/Invitation.ts
-import { Schema, model, Document, Types } from 'mongoose';
+import { Schema, model, Document, Types } from "mongoose";
 
 export interface IInvitation extends Document {
   _id: Types.ObjectId;
@@ -46,39 +46,42 @@ export interface IInvitation extends Document {
   updatedAt: Date;
 }
 
-const InvitationSchema = new Schema<IInvitation>({
-  household: {
-    type: Schema.Types.ObjectId,
-    ref: 'Household',
-    required: true,
+const InvitationSchema = new Schema<IInvitation>(
+  {
+    household: {
+      type: Schema.Types.ObjectId,
+      ref: "Household",
+      required: true,
+    },
+    inviter: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    inviteeEmail: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
+    },
+    token: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    expiresAt: {
+      type: Date,
+      required: true,
+    },
   },
-  inviter: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
+  {
+    timestamps: true,
   },
-  inviteeEmail: {
-    type: String,
-    required: true,
-    lowercase: true,
-    trim: true,
-  },
-  token: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  expiresAt: {
-    type: Date,
-    required: true,
-  },
-}, {
-  timestamps: true,
-});
+);
 
 InvitationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-const Invitation = model<IInvitation>('Invitation', InvitationSchema);
+const Invitation = model<IInvitation>("Invitation", InvitationSchema);
 
 export default Invitation;
 ```
