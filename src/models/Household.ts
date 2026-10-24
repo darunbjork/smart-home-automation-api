@@ -1,12 +1,12 @@
 import { Schema, model, Document, Types } from "mongoose";
 import { IUser } from "../types/user.d";
-import { IDevice } from "./Device"; 
+import { IDevice } from "./Device";
 export interface IHousehold extends Document {
   _id: Types.ObjectId;
   name: string;
   owner: Types.ObjectId;
   members: Types.ObjectId[] | IUser[];
-  devices: Types.ObjectId[] | IDevice[]; 
+  devices: Types.ObjectId[] | IDevice[];
   createdAt: Date;
   updatedAt: Date;
 }

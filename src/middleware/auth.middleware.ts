@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { CustomError } from "./error.middleware";
 import { verifyAccessToken, JwtPayload } from "../services/auth.service";
 import logger from "../utils/logger";
+
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
@@ -14,9 +15,9 @@ declare global {
 // Authentication Middleware
 export const authenticate = (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
-) => {
+): void => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw new CustomError("No access token provided or malformed.", 401);
@@ -25,38 +26,17 @@ export const authenticate = (
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = verifyAccessToken(token); 
+    const decoded = verifyAccessToken(token);
     req.user = decoded;
     logger.debug(`User ${decoded.userId} authenticated.`);
-    next(); 
+    next();
   } catch (error) {
     logger.warn({ error }, "Authentication failed.");
     next(error);
   }
 };
 
-// Authorization Middleware (Role-Based Access Control)
-export const authorize = (roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      throw new CustomError(
-        "Unauthorized: User information not available.",
-        401,
-      );
-    }
-
-    if (!roles.includes(req.user.role)) {
-      logger.warn(
-        `User ${req.user.userId} with role ${req.user.role} attempted unauthorized access.`,
-      );
-      throw new CustomError(
-        "Forbidden: You do not have permission to perform this action.",
-        403,
-      ); // 403 Forbidden
-    }
-    logger.debug(
-      `User ${req.user.userId} authorized with role ${req.user.role}.`,
-    );
-    next(); // User has required role, proceed.
-  };
-};
+// NOTE: the old `authorize(roles)` middleware was removed.
+// Authorisation is per household and lives in services
+// (`getMembership` / `requireRole` in src/services/access.service.ts).
+// The global User.role field and the role claim in the access token are deprecated.

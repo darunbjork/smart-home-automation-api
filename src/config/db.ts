@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import { env } from "./env"; 
-import logger from "../utils/logger"; 
+import { env } from "./env";
+import logger from "../utils/logger";
 
 const connectDB = async () => {
   try {
@@ -12,7 +12,7 @@ const connectDB = async () => {
 
     await mongoose.connect(mongoURI, {
       connectTimeoutMS: 30000,
-      serverSelectionTimeoutMS: 30000, 
+      serverSelectionTimeoutMS: 30000,
     });
 
     logger.info("MongoDB Connected successfully.");
@@ -23,7 +23,7 @@ const connectDB = async () => {
 
     mongoose.connection.on("error", (err) => {
       logger.error("Mongoose default connection error: " + err);
-      process.exit(1); 
+      process.exit(1);
     });
 
     mongoose.connection.on("disconnected", () => {

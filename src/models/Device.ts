@@ -5,9 +5,9 @@ export interface IDevice extends Document {
   name: string;
   type: string; // e.g., 'light', 'thermostat', 'sensor'
   status: "online" | "offline" | "unknown" | "pending";
-  household: Types.ObjectId; 
-  owner: Types.ObjectId; 
-  data: Record<string, unknown>; 
+  household: Types.ObjectId;
+  owner: Types.ObjectId;
+  data: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }

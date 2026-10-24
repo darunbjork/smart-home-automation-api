@@ -2,11 +2,16 @@ import { Router } from "express";
 import * as householdController from "../controllers/household.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import {
-  validateInviteUser,
   validateInvitationToken,
   validateLeaveHousehold,
   validateHouseholdParam,
 } from "../middleware/validation.middleware";
+import { validateBody } from "../middleware/validate.middleware";
+import {
+  inviteHouseholdSchema,
+  updateHouseholdSchema,
+} from "../schemas/household.schema";
+import { inviteLimiter } from "../middleware/rate-limit.middleware";
 
 const router = Router();
 
@@ -87,7 +92,6 @@ router.post("/", householdController.createHousehold);
  *         $ref: '#/components/responses/InternalServerError'
  */
 
-
 /**
  * @swagger
  * /households/leave:
@@ -166,7 +170,12 @@ router.post(
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.post("/invite", validateInviteUser, householdController.inviteUser);
+router.post(
+  "/invite",
+  inviteLimiter,
+  validateBody(inviteHouseholdSchema),
+  householdController.inviteUser,
+);
 
 /**
  * @swagger
@@ -301,7 +310,6 @@ router.get(
   householdController.getHouseholdById,
 );
 
-
 /**
  * @swagger
  * /households/{id}:
@@ -381,7 +389,11 @@ router.delete(
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
-router.patch("/:id", householdController.updateHousehold);
+router.patch(
+  "/:id",
+  validateHouseholdParam,
+  validateBody(updateHouseholdSchema),
+  householdController.updateHousehold,
+);
 
 export default router;
-

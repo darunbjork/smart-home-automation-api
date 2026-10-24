@@ -7,7 +7,7 @@ export interface IHousehold extends Document {
   members: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
-  __v?: number; 
+  __v?: number;
 }
 
 export interface IUser extends Document {

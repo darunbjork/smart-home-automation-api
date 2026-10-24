@@ -1,52 +1,69 @@
-name: CI/CD Pipeline
+name: CI
 
+# Every push and every pull request goes through the full quality gate.
 on:
   push:
-    branches:
-      - main  # Run this workflow on every push to the main branch
-      - feat/devops-pipeline # Also run on this branch
   pull_request:
-    branches:
-      - main  # Also run it on every pull request to main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build_and_test:
-    runs-on: ubuntu-latest  # Use a fresh Ubuntu runner for the job
+  quality-gate:
+    name: quality-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
-      # Step 1: Checkout the code from the repository
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history so gitleaks can scan every commit, not just the tip.
+          fetch-depth: 0
 
-      # Step 2: Set up the Node.js environment
+      # Pinned + checksum-verified gitleaks CLI (no third-party action, no
+      # license needed for personal accounts). Checksums come from
+      # https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_checksums.txt
+      - name: Secret scan (gitleaks 8.30.1, pinned)
+        env:
+          GITLEAKS_VERSION: "8.30.1"
+          GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+        run: |
+          curl -sSfL -o /tmp/gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  /tmp/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          /tmp/gitleaks detect --redact --verbose
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'  # Use the same Node.js version as our project
+          node-version-file: .nvmrc
+          cache: npm
 
-      # Step 3: Cache the node_modules to speed up builds
-      - name: Cache Node Modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      # Step 4: Install dependencies
-      - name: Install Dependencies
+      - name: Install dependencies
         run: npm ci
 
-      # Step 5: Build the TypeScript application
-      - name: Build Application
+      - name: Cache mongodb-memory-server binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-memory-server
+          key: ${{ runner.os }}-mongod-${{ hashFiles('package-lock.json') }}
+
+      - name: Prettier (format check)
+        run: npm run format:check
+
+      - name: ESLint (lint)
+        run: npm run lint
+
+      - name: TypeScript (type-check)
+        run: npm run typecheck
+
+      - name: Build
         run: npm run build
 
-      # Step 6: Run tests with coverage
-      - name: Run Unit & Integration Tests
-        run: npm test -- --coverage
+      - name: Test
+        run: npm test
         env:
           NODE_ENV: test
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
-          ACCESS_TOKEN_EXPIRES_IN: ${{ secrets.ACCESS_TOKEN_EXPIRES_IN }}
-          REFRESH_TOKEN_EXPIRES_IN: ${{ secrets.REFRESH_TOKEN_EXPIRES_IN }}

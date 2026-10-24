@@ -1,18 +1,27 @@
+import bcrypt from "bcryptjs";
 import User from "../models/User";
-import Household from "../models/Household"; 
+import Household from "../models/Household";
 import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
 import { IUser } from "../types/user.d";
-import { generateAccessToken, generateRefreshToken } from "./auth.service";
+import {
+  generateAccessToken,
+  issueRefreshToken,
+  IssuedRefreshToken,
+} from "./auth.service";
+
+// Computed once with the same cost as a real hash so a login for an unknown
+// email takes about as long as a login for a real one (no user enumeration
+// through response timing).
+const DUMMY_HASH = bcrypt.hashSync("timing-equalisation-placeholder", 12);
 
 export const registerUser = async (
   username: string,
   email: string,
   password: string,
-  householdName: string, 
+  householdName: string,
 ): Promise<IUser> => {
   try {
-    // Explicitly check for existing user by email OR username
     const existingUserByEmail = await User.findOne({ email });
     if (existingUserByEmail) {
       throw new CustomError("A user with this email already exists.", 409);
@@ -23,14 +32,15 @@ export const registerUser = async (
       throw new CustomError("A user with this username already exists.", 409);
     }
 
-    // If no duplicates found, proceed to create
+    // `role` is deprecated (never used for authorisation) but is kept truthful:
+    // a fresh account is not an owner of anything yet beyond its own household.
     const user = new User({
       username,
       email,
       password,
-      role: "owner",
+      role: "member",
     });
-    await user.save(); // Mongoose unique indexes should still catch anything missed
+    await user.save();
 
     const household = new Household({
       name: householdName,
@@ -45,17 +55,17 @@ export const registerUser = async (
     logger.info(
       `New user ${user.username} registered with a new household: ${household.name}.`,
     );
+    await user.populate("households", "name owner");
     return user;
   } catch (error: unknown) {
     if (error instanceof CustomError) {
-      throw error; 
+      throw error;
     }
     const asError = error as {
       code?: number;
       message: string;
       statusCode?: number;
     };
-    // Check for MongoDB duplicate key error code (11000) - this catches username/email uniqueness from Mongoose indexes
     if (asError.code === 11000) {
       throw new CustomError("Username or email already exists.", 409);
     }
@@ -69,70 +79,57 @@ export const registerUser = async (
 export const loginUser = async (
   email: string,
   password: string,
-): Promise<{ user: IUser; accessToken: string; refreshToken: string }> => {
-  try {
-    const user = await User.findOne({ email, isActive: true })
-      .select("+password")
-      .populate("households");
-    if (!user) {
-      throw new CustomError("Invalid credentials.", 401);
-    }
+): Promise<{
+  user: IUser;
+  accessToken: string;
+  refresh: IssuedRefreshToken;
+}> => {
+  const user = await User.findOne({ email, isActive: true })
+    .select("+password")
+    .populate("households", "name owner");
 
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      throw new CustomError("Invalid credentials.", 401);
-    }
-
-    logger.debug(
-      `User object before token generation: ${JSON.stringify(user)}`,
-    );
-
-    const accessToken = generateAccessToken(user);
-    const refreshToken = await generateRefreshToken(user); 
-
-    logger.info(`User ${user.username} logged in successfully.`);
-    return { user, accessToken, refreshToken };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    throw new CustomError(error.message, error.statusCode || 500);
-  }
-};
-
-export const getAllUsers = async (): Promise<IUser[]> => {
-  const users = await User.find({ isActive: true }).populate(
-    "households",
-    "name",
-  );
-  logger.info(`Fetched ${users.length} active users.`);
-  return users;
-};
-
-export const getUserById = async (userId: string): Promise<IUser> => {
-  const user = await User.findOne({ _id: userId, isActive: true }).populate(
-    "households",
-    "name",
-  );
   if (!user) {
-    throw new CustomError("User not found.", 404);
+    // Burn the same CPU a real comparison would, then fail identically.
+    await bcrypt.compare(password, DUMMY_HASH);
+    throw new CustomError("Invalid email or password.", 401);
   }
-  logger.info(`Fetched user with ID: ${userId}`);
-  return user;
+
+  const isMatch = await bcrypt.compare(password, user.password ?? DUMMY_HASH);
+  if (!isMatch) {
+    throw new CustomError("Invalid email or password.", 401);
+  }
+
+  const accessToken = generateAccessToken(user);
+  const refresh = await issueRefreshToken(user._id);
+
+  logger.info(`User ${user.username} logged in successfully.`);
+  return { user, accessToken, refresh };
 };
 
+// Profile lookup used by GET /users/profile and GET /users/:id (self only).
+export const getProfile = async (userId: string): Promise<IUser | null> => {
+  return User.findOne({ _id: userId, isActive: true }).populate(
+    "households",
+    "name owner",
+  );
+};
+
+// Whitelisted self-update. The route body is already parsed by a strict Zod
+// schema, so `role`, `isActive`, `households` and `password` never arrive.
 export const updateUser = async (
   userId: string,
-  updateData: Partial<IUser>,
+  updateData: { username?: string },
 ): Promise<IUser> => {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _password, ...safeUpdateData } = updateData;
-    if (safeUpdateData.email || safeUpdateData.username) {
+    const safeUpdateData: { username?: string } = {};
+    if (updateData.username !== undefined) {
+      safeUpdateData.username = updateData.username;
+    }
+
+    if (Object.keys(safeUpdateData).length > 0) {
       const existingUser = await User.findOne({
-        $or: [
-          { email: safeUpdateData.email },
-          { username: safeUpdateData.username },
-        ],
-        _id: { $ne: userId }, 
+        username: safeUpdateData.username,
+        _id: { $ne: userId },
         isActive: true,
       });
       if (existingUser) {
@@ -144,10 +141,10 @@ export const updateUser = async (
     }
 
     const user = await User.findOneAndUpdate(
-      { _id: userId, isActive: true }, 
+      { _id: userId, isActive: true },
       { $set: safeUpdateData },
       { new: true, runValidators: true },
-    );
+    ).populate("households", "name owner");
 
     if (!user) {
       throw new CustomError("User not found or not active.", 404);
@@ -155,13 +152,13 @@ export const updateUser = async (
     logger.info(`User with ID: ${userId} updated.`);
     return user;
   } catch (error: unknown) {
+    if (error instanceof CustomError) throw error;
     const asError = error as {
       code?: number;
       message: string;
       statusCode?: number;
     };
     if (asError.code === 11000) {
-      // MongoDB duplicate key error
       throw new CustomError("Username or email already taken.", 409);
     }
     throw new CustomError(
@@ -170,19 +167,3 @@ export const updateUser = async (
     );
   }
 };
-
-
-export const deleteUser = async (userId: string): Promise<void> => {
-  const user = await User.findOneAndUpdate(
-    { _id: userId, isActive: true },
-    { $set: { isActive: false } },
-    { new: true },
-  );
-
-  if (!user) {
-    throw new CustomError("User not found or already inactive.", 404);
-  }
-  logger.info(`User with ID: ${userId} soft-deleted.`);
-
-};
-export { generateAccessToken };

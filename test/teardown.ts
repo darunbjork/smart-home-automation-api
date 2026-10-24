@@ -1,8 +1,7 @@
- // test/teardown.js
-import { disconnect } from 'mongoose';
+import { disconnect } from "mongoose";
 
 export default async () => {
-  await disconnect(); // Ensure mongoose connection is closed
+  await disconnect();
   const replSet = global.__MONGOD__;
   if (replSet) {
     await replSet.stop();

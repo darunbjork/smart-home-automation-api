@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from "axios";
 
 export interface Invitation {
   _id: string;
@@ -8,7 +8,14 @@ export interface Invitation {
 }
 
 export const invitationApi = {
-  getPending: () => axios.get('/households/invitations').then((r: any) => r.data.invitations),
-  accept: (token: string) => axios.post('/households/invitations/accept', { token }),
-  decline: (token: string) => axios.post('/households/invitations/decline', { token }),
+  getPending: async (): Promise<Invitation[]> => {
+    const r = await axios.get<{ invitations: Invitation[] }>(
+      "/households/invitations",
+    );
+    return r.data.invitations;
+  },
+  accept: (token: string) =>
+    axios.post("/households/invitations/accept", { token }),
+  decline: (token: string) =>
+    axios.post("/households/invitations/decline", { token }),
 };

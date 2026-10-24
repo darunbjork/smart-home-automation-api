@@ -1,13 +1,8 @@
 import request from "supertest";
 import app from "../app";
-import { connect, disconnect } from "mongoose"; 
-import { MongoMemoryReplSet } from "mongodb-memory-server";
+import { connect, disconnect } from "mongoose";
 import User from "../models/User";
 import Household from "../models/Household";
-
-declare global {
-  var __MONGOD__: MongoMemoryReplSet;
-}
 
 jest.setTimeout(30000);
 
@@ -23,19 +18,16 @@ describe("User Authentication and Household Management", () => {
   });
 
   afterAll(async () => {
+    // The shared in-memory replica set is owned by test/setup.ts + teardown.ts;
+    // stopping it here would break every test file that runs after this one.
     await disconnect();
-    const replSet = global.__MONGOD__;
-    if (replSet) {
-      await replSet.stop();
-    }
   });
-
 
   it("should register a new user and create a household successfully", async () => {
     const res = await request(app).post("/users/register").send({
       username: "testuser",
       email: "test@example.com",
-      password: "password123",
+      password: "password1234",
       householdName: "Test Household",
     });
 
@@ -47,15 +39,17 @@ describe("User Authentication and Household Management", () => {
     expect(res.body.user.username).toEqual("testuser");
     expect(res.body.user.email).toEqual("test@example.com");
     expect(res.body.user.households).toHaveLength(1);
-    expect(res.body.user.role).toEqual("owner");
+    expect(res.body.user.role).toEqual("member");
 
     const userInDb = await User.findById(res.body.user._id);
     expect(userInDb).not.toBeNull();
     expect(userInDb?.username).toEqual("testuser");
     expect(userInDb?.email).toEqual("test@example.com");
-    expect(userInDb?.password).not.toEqual("password123");
+    expect(userInDb?.password).not.toEqual("password1234");
 
-    const householdInDb = await Household.findById(res.body.user.households[0]);
+    const householdInDb = await Household.findById(
+      res.body.user.households[0]._id,
+    );
     expect(householdInDb).not.toBeNull();
     expect(householdInDb?.name).toEqual("Test Household");
     expect(householdInDb?.owner.toString()).toEqual(userInDb?._id.toString());
@@ -66,26 +60,26 @@ describe("User Authentication and Household Management", () => {
     await request(app).post("/users/register").send({
       username: "duplicateuser",
       email: "duplicate@example.com",
-      password: "password123",
+      password: "password1234",
       householdName: "Duplicate Household",
     });
 
     const res1 = await request(app).post("/users/register").send({
-      username: "duplicateuser", 
-      email: "another@example.com", 
-      password: "password123",
+      username: "duplicateuser",
+      email: "another@example.com",
+      password: "password1234",
       householdName: "Another Household",
     });
     expect(res1.statusCode).toEqual(409);
-   
+
     expect(res1.body.error.message).toEqual(
-      "A user with this username already exists.", 
+      "A user with this username already exists.",
     );
 
     const res2 = await request(app).post("/users/register").send({
       username: "uniqueuser",
-      email: "duplicate@example.com", 
-      password: "password123",
+      email: "duplicate@example.com",
+      password: "password1234",
       householdName: "Unique Household",
     });
     expect(res2.statusCode).toEqual(409);
@@ -121,7 +115,7 @@ describe("User Authentication and Household Management", () => {
     });
     expect(res1.statusCode).toEqual(401);
     console.log(res1.body);
-    expect(res1.body.error.message).toEqual("Invalid credentials.");
+    expect(res1.body.error.message).toEqual("Invalid email or password.");
 
     await request(app).post("/users/register").send({
       username: "anotheruser",
@@ -135,7 +129,7 @@ describe("User Authentication and Household Management", () => {
       password: "wrongpassword",
     });
     expect(res2.statusCode).toEqual(401);
-    expect(res2.body.error.message).toEqual("Invalid credentials.");
+    expect(res2.body.error.message).toEqual("Invalid email or password.");
   });
 
   it("should return 400 if required fields are missing for registration", async () => {
@@ -145,7 +139,7 @@ describe("User Authentication and Household Management", () => {
     });
     expect(res.statusCode).toEqual(400);
     expect(res.body.error.message).toContain(
-      "Password must be at least 8 characters long",
+      "Password must be at least 12 characters long",
     );
     expect(res.body.error.message).toContain("Household name is required");
   });

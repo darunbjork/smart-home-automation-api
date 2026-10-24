@@ -19,7 +19,7 @@ if (!GEMINI_API_KEY) {
 
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-const parseActions = (responseText: string): any[] => {
+const parseActions = (responseText: string): unknown[] => {
   const jsonMatch = responseText.match(/\[[\s\S]*\]/);
   if (!jsonMatch) return [];
 
@@ -32,16 +32,24 @@ const parseActions = (responseText: string): any[] => {
   }
 };
 
-export const processAICommand = async (req: Request, res: Response, next: NextFunction) => {
+export const processAICommand = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const { prompt, devices } = req.body;
-    const user = req.user; 
 
     if (!GEMINI_API_KEY) {
-        throw new CustomError("AI service is not configured. GEMINI_API_KEY is missing.", 500);
+      throw new CustomError(
+        "AI service is not configured. GEMINI_API_KEY is missing.",
+        500,
+      );
     }
 
-    const deviceContext = devices.map((d: any) => ({
+    const deviceContext = (
+      devices as Array<{ _id: string; name: string; data?: { on?: boolean } }>
+    ).map((d) => ({
       id: d._id,
       name: d.name,
       status: d.data?.on ? "on" : "off",
@@ -81,36 +89,55 @@ Now respond with JSON array:
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Gemini API error response:", errorText);
-      throw new CustomError(`AI service unavailable or returned an error: ${response.status} ${response.statusText}`, 503);
+      throw new CustomError(
+        `AI service unavailable or returned an error: ${response.status} ${response.statusText}`,
+        503,
+      );
     }
 
     const data = response.json() as Promise<GeminiResponse>;
     const typedData = await data;
 
     let aiResponseText = "";
-    if (typedData.candidates && typedData.candidates.length > 0 && typedData.candidates[0].content && typedData.candidates[0].content.parts && typedData.candidates[0].content.parts.length > 0 && typedData.candidates[0].content.parts[0].text) {
+    if (
+      typedData.candidates &&
+      typedData.candidates.length > 0 &&
+      typedData.candidates[0].content &&
+      typedData.candidates[0].content.parts &&
+      typedData.candidates[0].content.parts.length > 0 &&
+      typedData.candidates[0].content.parts[0].text
+    ) {
       aiResponseText = typedData.candidates[0].content.parts[0].text;
     } else {
-      console.error("Unexpected response structure from Gemini API:", typedData);
+      console.error(
+        "Unexpected response structure from Gemini API:",
+        typedData,
+      );
       throw new CustomError("Failed to parse AI response structure.", 500);
     }
-     console.log("Raw AI response:", aiResponseText);
+    console.log("Raw AI response:", aiResponseText);
 
     const actions = parseActions(aiResponseText);
 
-    const validActions = actions.filter((action: any) =>
-      devices.some((d: any) => d._id === action.id)
+    const knownDevices = devices as Array<{ _id: string }>;
+    const validActions = actions.filter((action) => {
+      if (typeof action !== "object" || action === null) return false;
+      const id = (action as { id?: unknown }).id;
+      return knownDevices.some((d) => d._id === id);
+    });
+    console.log(
+      `AI generated ${actions.length} actions, ${validActions.length} are valid.`,
     );
-    console.log(`AI generated ${actions.length} actions, ${validActions.length} are valid.`);
 
     res.json({ actions: validActions });
-
   } catch (error) {
     console.error("AI command processing failed:", error);
     if (error instanceof CustomError) {
       next(error);
     } else {
-      next(new CustomError("AI processing failed. Please try again later.", 500));
+      next(
+        new CustomError("AI processing failed. Please try again later.", 500),
+      );
     }
   }
 };

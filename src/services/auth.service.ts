@@ -1,172 +1,169 @@
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import { Types } from "mongoose";
 import { env } from "../config/env";
 import { IUser } from "../types/user.d";
-import RefreshToken from "../models/RefreshToken";
+import User from "../models/User";
+import RefreshSession from "../models/RefreshSession";
 import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
-import User from "../models/User";
+
+// The access token carries ONLY the user id. Per-household roles are
+// resolved from the households collection (see access.service.ts).
 export interface JwtPayload {
   userId: string;
-  role: string;
+  exp?: number;
+  iat?: number;
 }
 
-// Generate Access Token
+export interface IssuedRefreshToken {
+  token: string;
+  familyId: string;
+  expiresAt: Date;
+}
+
+// Concurrent refreshes with the same token (two tabs, a retry after a
+// timeout) inside this window get a 401 but do NOT burn the session family.
+const REFRESH_GRACE_MS = 10_000;
+
+export const parseDurationMs = (value: string): number => {
+  const amount = Number.parseInt(value.slice(0, -1), 10);
+  const unit = value.slice(-1);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error(`Invalid duration "${value}".`);
+  }
+  switch (unit) {
+    case "s":
+      return amount * 1_000;
+    case "m":
+      return amount * 60_000;
+    case "h":
+      return amount * 3_600_000;
+    case "d":
+      return amount * 86_400_000;
+    default:
+      throw new Error(
+        `Invalid duration unit in "${value}" (use s, m, h or d).`,
+      );
+  }
+};
+
+const hashToken = (token: string): string =>
+  crypto.createHash("sha256").update(token).digest("hex");
+
 export const generateAccessToken = (user: IUser): string => {
-  const payload: JwtPayload = {
-    userId: user._id.toHexString(), // Convert ObjectId to string
-    role: user.role,
-  };
+  const payload: JwtPayload = { userId: user._id.toHexString() };
   return jwt.sign(payload, env.JWT_SECRET, {
+    algorithm: "HS256",
     expiresIn: env.ACCESS_TOKEN_EXPIRES_IN as jwt.SignOptions["expiresIn"],
   });
 };
 
-// Generate Refresh Token and save to DB
-export const generateRefreshToken = async (user: IUser): Promise<string> => {
-  const payload = {
-    userId: user._id.toHexString(),
-  };
-
-  const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, {
-    expiresIn: env.REFRESH_TOKEN_EXPIRES_IN as jwt.SignOptions["expiresIn"],
-  });
-
-  // Calculate expiration date for database storage
-  const expiresAt = new Date(
-    Date.now() + _getExpiresInMilliseconds(env.REFRESH_TOKEN_EXPIRES_IN),
-  );
-
-  // Save the refresh token to the database
-  const newRefreshTokenDoc = new RefreshToken({
-    userId: user._id,
-    token: refreshToken,
-    expiresAt: expiresAt,
-  });
-  await newRefreshTokenDoc.save();
-
-  return refreshToken;
-};
-
-// Helper to convert expiration string (e.g., '15m', '7d') to milliseconds
-const _getExpiresInMilliseconds = (expiresIn: string): number => {
-  const value = parseInt(expiresIn.slice(0, -1));
-  const unit = expiresIn.slice(-1);
-
-  switch (unit) {
-    case "s":
-      return value * 1000;
-    case "m":
-      return value * 60 * 1000;
-    case "h":
-      return value * 60 * 60 * 1000;
-    case "d":
-      return value * 24 * 60 * 60 * 1000;
-    default:
-      return value * 1000; // Default to seconds if no unit
-  }
-};
-
-// Verify Access Token
 export const verifyAccessToken = (token: string): JwtPayload => {
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
-    return decoded;
+    const decoded = jwt.verify(token, env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
+    if (typeof decoded === "string" || typeof decoded.userId !== "string") {
+      throw new CustomError("Invalid access token", 401);
+    }
+    return { userId: decoded.userId, exp: decoded.exp, iat: decoded.iat };
   } catch (err: unknown) {
-    // Changed any to unknown
+    if (err instanceof CustomError) throw err;
     if (err instanceof Error && err.name === "TokenExpiredError") {
-      throw new CustomError("Access token expired", 401); // 401 Unauthorized
+      throw new CustomError("Access token expired", 401, "TOKEN_EXPIRED");
     }
     throw new CustomError("Invalid access token", 401);
   }
 };
 
-// Verify Refresh Token and handle rotation
-export const verifyAndRotateRefreshToken = async (
-  oldRefreshToken: string,
-): Promise<{
-  accessToken: string;
-  refreshToken: string;
-  userId: string;
-  role: string;
-}> => {
-  try {
-    logger.debug(
-      `Attempting to verify and rotate refresh token: ${oldRefreshToken}`,
-    );
-    const decoded = jwt.verify(
-      oldRefreshToken,
-      env.JWT_REFRESH_SECRET,
-    ) as JwtPayload;
-    const userId = decoded.userId;
-    logger.debug(`Decoded refresh token for userId: ${userId}`);
-
-    // Find the refresh token in the database
-    const storedToken = await RefreshToken.findOne({
-      userId,
-      token: oldRefreshToken,
-    });
-    logger.debug(`Stored token found: ${storedToken ? "Yes" : "No"}`);
-
-    // Senior Insight: Implement token rotation and invalidation checks.
-    // If token not found or already used (via rotation), consider it compromised.
-    if (!storedToken || storedToken.expiresAt < new Date()) {
-      // If token is found but expired, the TTL index should handle it, but double-check.
-      // If a token isn't found, it's either invalid, expired, or already used/rotated.
-      logger.warn(
-        `Refresh token for user ${userId} not found or expired/invalidated.`,
-      );
-      throw new CustomError("Invalid or expired refresh token.", 401);
-    }
-
-    // Senior Insight: Crucial step for refresh token rotation - Invalidate the old token
-    const deleteResult = await RefreshToken.deleteOne({ _id: storedToken._id });
-    logger.debug(
-      `Delete old refresh token result: ${JSON.stringify(deleteResult)}`,
-    );
-
-    // Find the user to generate new tokens with correct role
-    const user = await User.findById(userId);
-    if (!user || !user.isActive) {
-      throw new CustomError(
-        "User associated with refresh token not found or inactive.",
-        401,
-      );
-    }
-
-    const newAccessToken = generateAccessToken(user);
-    const newRefreshToken = await generateRefreshToken(user); // Generate and save a new refresh token
-
-    logger.info(`Refresh token rotated for user ${user.username}.`);
-    return {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-      userId: user._id.toHexString(),
-      role: user.role,
-    };
-  } catch (err: unknown) {
-    // Changed any to unknown
-    logger.error({ err }, "Error verifying or rotating refresh token.");
-    if (err instanceof Error && err.name === "TokenExpiredError") {
-      throw new CustomError("Refresh token expired", 401);
-    }
-    throw new CustomError("Invalid refresh token", 401);
-  }
+// A refresh token is an opaque random string (48 bytes, base64url).
+// Only its SHA-256 is stored. No JWT and no second signing secret.
+export const issueRefreshToken = async (
+  userId: Types.ObjectId,
+  familyId: string = crypto.randomUUID(),
+): Promise<IssuedRefreshToken> => {
+  const token = crypto.randomBytes(48).toString("base64url");
+  const expiresAt = new Date(
+    Date.now() + parseDurationMs(env.REFRESH_TOKEN_EXPIRES_IN),
+  );
+  await RefreshSession.create({
+    userId,
+    familyId,
+    tokenHash: hashToken(token),
+    expiresAt,
+    usedAt: null,
+  });
+  return { token, familyId, expiresAt };
 };
 
-// Invalidate Refresh Token (logout)
-export const invalidateRefreshToken = async (
-  refreshToken: string,
-): Promise<void> => {
-  // Senior Insight: Find and delete the refresh token from the database.
-  // This effectively logs out the user.
-  const result = await RefreshToken.deleteOne({ token: refreshToken });
-  if (result.deletedCount === 0) {
-    logger.warn(
-      { refreshToken },
-      "Attempted to invalidate a refresh token that was not found.",
+export interface RotationResult {
+  accessToken: string;
+  refresh: IssuedRefreshToken;
+  user: IUser;
+}
+
+export const rotateRefreshToken = async (
+  presented: string,
+): Promise<RotationResult> => {
+  const tokenHash = hashToken(presented);
+  const now = new Date();
+
+  // Atomic claim: exactly one request can flip usedAt from null.
+  // Duplicates fall into the branch below.
+  const claimed = await RefreshSession.findOneAndUpdate(
+    { tokenHash, usedAt: null, expiresAt: { $gt: now } },
+    { $set: { usedAt: now } },
+    { new: true },
+  );
+
+  if (!claimed) {
+    const existing = await RefreshSession.findOne({ tokenHash });
+    if (
+      existing?.usedAt &&
+      now.getTime() - existing.usedAt.getTime() > REFRESH_GRACE_MS
+    ) {
+      // Replay of an already-rotated token outside the grace window:
+      // treat the whole family as compromised.
+      await RefreshSession.deleteMany({ familyId: existing.familyId });
+      logger.warn(
+        {
+          userId: existing.userId.toString(),
+          familyId: existing.familyId,
+        },
+        "Refresh token reuse detected; session family revoked.",
+      );
+    }
+    throw new CustomError(
+      "Invalid or expired refresh token.",
+      401,
+      "REFRESH_INVALID",
     );
-    // Even if not found, we still return success to the client for security reasons
-    // (don't reveal if a token exists or not).
   }
-  logger.info("Refresh token invalidated.");
+
+  const user = await User.findOne({ _id: claimed.userId, isActive: true });
+  if (!user) {
+    await RefreshSession.deleteMany({ familyId: claimed.familyId });
+    throw new CustomError(
+      "Invalid or expired refresh token.",
+      401,
+      "REFRESH_INVALID",
+    );
+  }
+
+  const refresh = await issueRefreshToken(user._id, claimed.familyId);
+  return { accessToken: generateAccessToken(user), refresh, user };
+};
+
+export const revokeFamilyByToken = async (presented: string): Promise<void> => {
+  const session = await RefreshSession.findOne({
+    tokenHash: hashToken(presented),
+  });
+  if (session) await RefreshSession.deleteMany({ familyId: session.familyId });
+};
+
+export const revokeAllSessionsForUser = async (
+  userId: Types.ObjectId,
+): Promise<void> => {
+  await RefreshSession.deleteMany({ userId });
 };

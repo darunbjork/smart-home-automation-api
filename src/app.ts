@@ -1,145 +1,98 @@
-import express, { Application, Request, Response, NextFunction } from "express";
+import express, { Application, NextFunction, Request, Response } from "express";
 import helmet from "helmet";
 import cors from "cors";
-import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
+import mongoSanitize from "express-mongo-sanitize";
+import swaggerUi from "swagger-ui-express";
+import pinoHttp from "pino-http";
+import { randomUUID } from "crypto";
 import healthRoutes from "./routes/health.routes";
 import userRoutes from "./routes/user.routes";
 import deviceRoutes from "./routes/device.routes";
 import householdRoutes from "./routes/household.routes";
 import aiRoutes from "./routes/ai.routes";
-import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger";
 import { env } from "./config/env";
+import { corsOriginCallback } from "./config/cors";
 import logger from "./utils/logger";
-import { CustomError } from "./middleware/error.middleware";
+import { CustomError, errorHandler } from "./middleware/error.middleware";
+import { globalLimiter } from "./middleware/rate-limit.middleware";
 
 const app: Application = express();
+
+// Render terminates TLS and forwards via one proxy. Without this, req.ip is the proxy for everyone.
+app.set("trust proxy", env.TRUST_PROXY_HOPS);
+app.disable("x-powered-by");
+
+app.use(
+  pinoHttp({
+    logger,
+    genReqId: (req, res) => {
+      const existing = req.headers["x-request-id"];
+      const id =
+        typeof existing === "string" && existing.length <= 64
+          ? existing
+          : randomUUID();
+      res.setHeader("x-request-id", id);
+      return id;
+    },
+    // Never log credentials.
+    redact: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      "res.headers['set-cookie']",
+    ],
+    autoLogging: {
+      ignore: (req) => req.url === "/health" || req.url === "/ready",
+    },
+  }),
+);
 
 app.use(helmet());
 
 app.use(
   cors({
-    origin:
-     env.NODE_ENV === "development"
-      ? "http://localhost:5173"
-      : process.env.FRONTEND_URL || "https://yourdomain.com",
+    origin: corsOriginCallback,
     credentials: true,
-  })
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Client",
+      "X-Requested-With",
+      "X-Request-Id",
+    ],
+    exposedHeaders: [
+      "X-Request-Id",
+      "RateLimit",
+      "RateLimit-Policy",
+      "Retry-After",
+    ],
+    maxAge: 600,
+  }),
 );
 
-// Rate limiting for API requests
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  message: "Too many requests from this IP, please try again after 15 minutes",
-});
+app.use(globalLimiter);
+app.use(express.json({ limit: "100kb" }));
+app.use(express.urlencoded({ extended: false, limit: "100kb" }));
+app.use(cookieParser());
+app.use(mongoSanitize()); // strips $ and . keys from body/query/params => blocks NoSQL operator injection
 
-// Apply rate limiting to all requests in production
-if (env.NODE_ENV === "production") {
-  app.use(apiLimiter);
+// API docs only outside production.
+if (!env.IS_PROD) {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 }
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-// --- Documentation Route ---
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-// --- Routes ---
 app.use("/", healthRoutes);
 app.use("/users", userRoutes);
 app.use("/devices", deviceRoutes);
 app.use("/households", householdRoutes);
-app.use("/ai", aiRoutes); // Add the AI routes
+app.use("/ai", aiRoutes);
 
-// Define Swagger/OpenAPI schemas and responses...
-/**
- * @swagger
- * components:
- * securitySchemes:
- * bearerAuth:
- * type: http
- * scheme: bearer
- * bearerFormat: JWT
- * schemas:
- * Invitation: # NEW: Schema for Invitation object
- * type: object
- * properties:
- * _id:
- * type: string
- * example: "60f8b8e0c8d7c1a0c8d7c1a3"
- * household:
- * type: string
- * example: "60f8b8e0c8d7c1a0c8d7c1a1"
- * inviter:
- * type: string
- * example: "60f8b8e0c8d7c1a0c8d7c1a0"
- * inviteeEmail:
- * type: string
- * example: "member @example.com"
- * token:
- * type: string
- * example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
- * expiresAt:
- * type: string
- * format: date-time
- * example: "2025-07-22T10:00:00Z"
- * HouseholdResponse: # NEW: Schema for Household object
- * type: object
- * properties:
- * _id:
- * type: string
- * example: "60f8b8e0c8d7c1a0c8d7c1a1"
- * name:
- * type: string
- * example: "Doe Family Home"
- * owner:
- * type: string
- * example: "60f8b8e0c8d7c1a0c8d7c1a0"
- * members:
- * type: array
- * items:
- * type: string
- * example: "60f8b8e0c8d7c1a0c8d7c1a0"
- * devices:
- * type: array
- * items:
- * type: string
- * example: "60f8b8e0c8d7c1a0c8d7c1a2"
- * createdAt:
- * type: string
- * format: date-time
- * example: "2025-07-21T10:00:00Z"
- * updatedAt:
- * type: string
- * format: date-time
- * example: "2025-07-21T10:00:00Z"
- * UserResponse:
- * ...
- * responses:
- * ...
- */
-app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
-  logger.error({ err }, "Error handler middleware caught an error.");
-  logger.error({ err }, "Unhandled API Error.");
-
-  const statusCode =
-    err instanceof CustomError ? (err as CustomError).statusCode : 500;
-  const message =
-    env.NODE_ENV === "production"
-      ? "An unexpected error occurred."
-      : err.message;
-
-  res.status(statusCode).json({
-    error: {
-      message: message,
-      ...(env.NODE_ENV === "development" && { stack: err.stack }),
-    },
-  });
+app.use((_req: Request, _res: Response, next: NextFunction) => {
+  next(new CustomError("Route not found.", 404, "NOT_FOUND"));
 });
+
+app.use(errorHandler);
 
 export default app;

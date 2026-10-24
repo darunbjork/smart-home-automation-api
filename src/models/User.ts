@@ -23,7 +23,8 @@ const UserSchema = new Schema<IUser>(
     password: {
       type: String,
       required: [true, "Password is required"],
-      minlength: [8, "Password must be at least 8 characters long"],
+      minlength: [12, "Password must be at least 12 characters long"],
+      maxlength: [128, "Password cannot exceed 128 characters"],
     },
     households: [
       {
@@ -53,7 +54,7 @@ UserSchema.pre("save", async function (next) {
     return next();
   }
   try {
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password!, salt);
     next();
   } catch (error: unknown) {

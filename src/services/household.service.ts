@@ -6,15 +6,12 @@ import Device from "../models/Device";
 import Invitation, { IInvitation } from "../models/Invitation";
 import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
-
-const isUserOwnerOfHousehold = async (
-  userId: Types.ObjectId,
-  householdId: Types.ObjectId,
-): Promise<boolean> => {
-  const household = await Household.findById(householdId).lean();
-  if (!household) return false;
-  return household.owner.equals(userId);
-};
+import { getMembership, requireRole } from "./access.service";
+import {
+  addUserToHouseholdRoom,
+  closeHouseholdRoom,
+  removeUserFromHouseholdRoom,
+} from "../realtime/socket";
 
 export const getHouseholdsForUser = async (
   userId: string,
@@ -31,31 +28,38 @@ export const getHouseholdById = async (
   householdId: string,
   userId: string,
 ): Promise<IHousehold> => {
-  const household =
-    await Household.findById(householdId).populate("members owner");
+  // Outsiders get 404 (getMembership), never a 403 that would leak existence.
+  const membership = await getMembership(userId, householdId);
+  const household = await Household.findById(membership.household._id).populate(
+    "members owner",
+  );
   if (!household) {
     throw new CustomError("Household not found.", 404);
   }
-  const userObjectId = new Types.ObjectId(userId);
-  if (!household.members.some((member) => member._id.equals(userObjectId))) {
-    throw new CustomError("User is not a member of this household.", 403);
-  }
   return household as IHousehold;
+};
+
+export const updateHouseholdName = async (
+  userId: string,
+  householdId: string,
+  name: string,
+): Promise<IHousehold> => {
+  await requireRole(userId, householdId, "owner");
+  const updated = await Household.findByIdAndUpdate(
+    householdId,
+    { $set: { name } },
+    { new: true, runValidators: true },
+  );
+  if (!updated) throw new CustomError("Household not found.", 404);
+  return updated;
 };
 
 export const deleteHousehold = async (
   householdId: string,
   userId: string,
 ): Promise<void> => {
-  const householdObjectId = new Types.ObjectId(householdId);
-  const userObjectId = new Types.ObjectId(userId);
-
-  if (!(await isUserOwnerOfHousehold(userObjectId, householdObjectId))) {
-    throw new CustomError(
-      "Only the household owner can delete the household.",
-      403,
-    );
-  }
+  const { household } = await requireRole(userId, householdId, "owner");
+  const householdObjectId = household._id;
 
   const session = await Household.startSession();
   session.startTransaction();
@@ -91,6 +95,7 @@ export const deleteHousehold = async (
     logger.info(
       `Household ${householdId} and all associated data deleted by owner ${userId}.`,
     );
+    closeHouseholdRoom(householdId);
   } catch (error) {
     await session.abortTransaction();
     logger.error(
@@ -107,13 +112,14 @@ export const inviteUserToHousehold = async (
   householdId: string,
   inviterId: string,
   inviteeEmail: string,
-): Promise<IInvitation> => {
-  const householdObjectId = new Types.ObjectId(householdId);
+): Promise<IInvitation | null> => {
+  const { household: membershipHousehold } = await requireRole(
+    inviterId,
+    householdId,
+    "owner",
+  );
+  const householdObjectId = membershipHousehold._id;
   const inviterObjectId = new Types.ObjectId(inviterId);
-
-  if (!(await isUserOwnerOfHousehold(inviterObjectId, householdObjectId))) {
-    throw new CustomError("Only the household owner can invite users.", 403);
-  }
 
   const household = await Household.findById(householdObjectId)
     .populate("members")
@@ -124,25 +130,28 @@ export const inviteUserToHousehold = async (
 
   const invitee = await User.findOne({ email: inviteeEmail });
   if (!invitee) {
-    logger.warn(`Invitation sent to non-existent user email: ${inviteeEmail}.`);
-  } else {
-    if (household.members.some((member) => member._id.equals(invitee._id))) {
-      throw new CustomError("User is already a member of this household.", 409);
-    }
-
-    const existingInvitation = await Invitation.findOne({
-      household: householdObjectId,
-      inviteeEmail,
-    });
-    if (existingInvitation) {
-      throw new CustomError(
-        "An invitation for this user is already pending.",
-        409,
-      );
-    }
+    // No account enumeration: nothing is created and the route answer is
+    // identical to the "invitee exists" case.
+    logger.warn(`Invite requested for an unknown email address.`);
+    return null;
   }
 
-  const token = crypto.randomBytes(32).toString("hex"); 
+  if (household.members.some((member) => member._id.equals(invitee._id))) {
+    throw new CustomError("User is already a member of this household.", 409);
+  }
+
+  const existingInvitation = await Invitation.findOne({
+    household: householdObjectId,
+    inviteeEmail,
+  });
+  if (existingInvitation) {
+    throw new CustomError(
+      "An invitation for this user is already pending.",
+      409,
+    );
+  }
+
+  const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   const invitation = new Invitation({
@@ -155,7 +164,7 @@ export const inviteUserToHousehold = async (
 
   await invitation.save();
   logger.info(
-    `Invitation sent for household ${householdId} to email ${inviteeEmail}.`,
+    `Invitation created for household ${householdId} to email ${inviteeEmail}.`,
   );
   return invitation;
 };
@@ -217,6 +226,7 @@ export const acceptInvitation = async (
     logger.info(
       `User ${userId} accepted invitation to household ${household._id}.`,
     );
+    addUserToHouseholdRoom(userId, household._id.toString());
     return household;
   } catch (error) {
     await session.abortTransaction();
@@ -257,15 +267,11 @@ export const leaveHousehold = async (
   householdId: string,
   userId: string,
 ): Promise<void> => {
-  const householdObjectId = new Types.ObjectId(householdId);
   const userObjectId = new Types.ObjectId(userId);
 
-  const household = await Household.findById(householdObjectId);
-  if (!household) {
-    throw new CustomError("Household not found.", 404);
-  }
-
-  if (household.owner.equals(userObjectId)) {
+  // Non-members get 404; owners are not allowed to leave (delete instead).
+  const { household, role } = await getMembership(userId, householdId);
+  if (role === "owner") {
     throw new CustomError(
       "Owners cannot leave their household; they must delete it instead.",
       403,
@@ -289,6 +295,7 @@ export const leaveHousehold = async (
 
     await session.commitTransaction();
     logger.info(`User ${userId} successfully left household ${household._id}.`);
+    removeUserFromHouseholdRoom(userId, household._id.toString());
   } catch (error) {
     await session.abortTransaction();
     logger.error(
@@ -301,7 +308,10 @@ export const leaveHousehold = async (
   }
 };
 
-export const createHousehold = async (name: string, userId: string): Promise<IHousehold> => {
+export const createHousehold = async (
+  name: string,
+  userId: string,
+): Promise<IHousehold> => {
   const userObjectId = new Types.ObjectId(userId);
 
   const session = await Household.startSession();
@@ -315,10 +325,15 @@ export const createHousehold = async (name: string, userId: string): Promise<IHo
 
     await household.save({ session });
 
-    await User.findByIdAndUpdate(userObjectId, { $push: { households: household._id } }, { session });
+    await User.findByIdAndUpdate(
+      userObjectId,
+      { $push: { households: household._id } },
+      { session },
+    );
 
     await session.commitTransaction();
     logger.info(`Household "${name}" created by user ${userId}.`);
+    addUserToHouseholdRoom(userId, household._id.toString());
     return household;
   } catch (error) {
     await session.abortTransaction();

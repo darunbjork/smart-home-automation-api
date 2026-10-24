@@ -4,8 +4,6 @@ import { CustomError } from "../middleware/error.middleware";
 import logger from "../utils/logger";
 import { IHousehold } from "../models/Household";
 import { IUser } from "../types/user";
-import Household from "../models/Household";
-
 
 const prepareHouseholdResponse = (household: IHousehold) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -93,19 +91,18 @@ export const inviteUser = async (
     if (!inviterId) {
       throw new CustomError("User not authenticated.", 401);
     }
-    const invitation = await householdService.inviteUserToHousehold(
+    await householdService.inviteUserToHousehold(
       householdId,
       inviterId,
       inviteeEmail,
     );
-    res
-      .status(201)
-      .json({ message: `Invitation sent to ${inviteeEmail}.`, invitation });
+    // Identical response whether or not the address belongs to a user
+    // (the invitation itself is only created for existing users).
+    res.status(200).json({
+      message:
+        "If that address belongs to a Hearth user, they will see the invitation.",
+    });
   } catch (error) {
-    logger.error(
-      { error },
-      `Error inviting user to household ${req.body.householdId}.`,
-    );
     next(error);
   }
 };
@@ -194,14 +191,18 @@ export const leaveHousehold = async (
   }
 };
 
-export const createHousehold = async (req: Request, res: Response, next: NextFunction) => {
+export const createHousehold = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const userId = req.user?.userId;
     if (!userId) throw new CustomError("User not authenticated.", 401);
-    
+
     const { name } = req.body;
     if (!name) throw new CustomError("Household name is required.", 400);
-    
+
     const household = await householdService.createHousehold(name, userId);
     // Return the created household, ensuring it's formatted correctly
     res.status(201).json(prepareHouseholdResponse(household));
@@ -210,19 +211,25 @@ export const createHousehold = async (req: Request, res: Response, next: NextFun
   }
 };
 
-export const updateHousehold = async (req: Request, res: Response, next: NextFunction) => {
+export const updateHousehold = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
+    const userId = req.user?.userId;
+    if (!userId) throw new CustomError("User not authenticated.", 401);
+
     const { id } = req.params;
     const { name } = req.body;
-    const updatedHousehold = await Household.findByIdAndUpdate(
+    const updatedHousehold = await householdService.updateHouseholdName(
+      userId,
       id,
-      { name },
-      { new: true, runValidators: true } 
-    ).populate("members owner"); 
-    
-    if (!updatedHousehold) throw new CustomError("Household not found", 404);
-
-    res.status(200).json(prepareHouseholdResponse(updatedHousehold));
+      name,
+    );
+    res
+      .status(200)
+      .json({ household: prepareHouseholdResponse(updatedHousehold) });
   } catch (error) {
     if (error instanceof CustomError) {
       next(error);

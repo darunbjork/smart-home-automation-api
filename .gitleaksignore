@@ -1,0 +1,9 @@
+# gitleaks ignore file — one entry per finding fingerprint (commit:file:rule:line)
+#
+# 2b22cff:client.html:jwt:13
+#   A demo HS256 access token hard-coded in client.html, introduced 2025-08-22 in
+#   2b22cff and already public in origin/main ever since. Its `exp` is
+#   2025-08-21T23:58:45Z, i.e. long expired and unrenewable. The file has since
+#   been redacted to "<ACCESS_TOKEN>"; this entry only silences the one
+#   historical commit that still contains the expired value. No live secret.
+2b22cffefea4af6e5f0c28b7dfa4fd1731659f41:client.html:jwt:13

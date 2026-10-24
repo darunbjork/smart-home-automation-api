@@ -18,40 +18,49 @@ module.exports = [
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
-        project: './tsconfig.json',
+        project: "./tsconfig.json",
         ecmaVersion: 2020,
-        sourceType: 'module',
+        sourceType: "module",
       },
     },
     plugins: {
-      '@typescript-eslint': tseslint.plugin,
+      "@typescript-eslint": tseslint.plugin,
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_+' }],
-      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_+" },
+      ],
+      "@typescript-eslint/explicit-module-boundary-types": "off",
     },
   },
   {
-    files: ['**/*.ts', '**/*.tsx'],
+    files: ["**/*.ts", "**/*.tsx"],
     rules: {
-      'no-restricted-syntax': [
-        'error',
+      "no-restricted-syntax": [
+        "error",
         {
-          selector: 'ImportDeclaration[source.value=/^(../|./).+.js$/]',
-          message: 'Use extensionless imports for internal TS modules.',
+          selector:
+            'ImportDeclaration[source.value^="./"][source.value$=".js"]',
+          message: "Use extensionless imports for internal TS modules.",
+        },
+        {
+          selector:
+            'ImportDeclaration[source.value^="../"][source.value$=".js"]',
+          message: "Use extensionless imports for internal TS modules.",
         },
       ],
     },
   },
-  // Prettier configuration
+  // Prettier configuration (formatting is enforced everywhere, src + tests)
   prettierConfig,
   {
-    files: ["src/**/*.ts"],
+    files: ["src/**/*.ts", "test/**/*.ts"],
     plugins: {
       prettier: prettierPlugin,
     },
     rules: {
-      'prettier/prettier': 'error',
+      "prettier/prettier": "error",
     },
   },
   // Jest configuration
@@ -65,10 +74,10 @@ module.exports = [
   {
     files: ["eslint.config.js"],
     languageOptions: {
-      sourceType: 'commonjs',
+      sourceType: "commonjs",
     },
     rules: {
-      '@typescript-eslint/no-require-imports': 'off',
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 ];
